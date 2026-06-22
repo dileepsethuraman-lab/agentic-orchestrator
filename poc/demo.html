@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Telecom Agentic Orchestration Engine — PoC Demo</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'JetBrains Mono',monospace;background:#020617;color:#e2e8f0;height:100vh;display:flex;flex-direction:column}
+.header{background:rgba(15,23,42,0.9);border-bottom:1px solid #1e293b;padding:0.7rem 1.5rem;display:flex;align-items:center;gap:0.8rem;flex-shrink:0}
+.pulse{width:10px;height:10px;background:#22d3ee;border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.header h1{font-size:0.95rem;font-weight:600;letter-spacing:-0.02em}
+.header .badge{font-size:0.6rem;padding:0.15rem 0.5rem;border-radius:999px;background:rgba(34,211,238,0.15);color:#22d3ee;border:1px solid rgba(34,211,238,0.3)}
+.main{display:flex;flex:1;overflow:hidden}
+.panel{padding:1rem;overflow-y:auto}
+.panel-left{width:420px;flex-shrink:0;border-right:1px solid #1e293b;background:rgba(15,23,42,0.4);display:flex;flex-direction:column}
+.panel-right{flex:1;background:rgba(2,6,23,0.6)}
+.lbl{display:block;font-size:0.65rem;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.35rem}
+textarea{width:100%;min-height:140px;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#e2e8f0;font-family:'JetBrains Mono',monospace;font-size:0.68rem;padding:0.65rem;resize:vertical;line-height:1.5}
+textarea:focus{outline:none;border-color:#22d3ee;box-shadow:0 0 0 2px rgba(34,211,238,0.15)}
+.btn-row{display:flex;gap:0.5rem;margin-top:0.5rem}
+button{font-family:'JetBrains Mono',monospace;font-size:0.65rem;font-weight:600;padding:0.5rem 0.9rem;border-radius:8px;border:none;cursor:pointer;transition:all .15s}
+.btn-primary{background:#22d3ee;color:#020617}
+.btn-primary:hover{background:#67e8f9}
+.btn-secondary{background:rgba(51,65,85,0.5);color:#94a3b8;border:1px solid #334155}
+.btn-secondary:hover{background:rgba(51,65,85,0.8);color:#e2e8f0}
+button:disabled{opacity:0.4;cursor:not-allowed}
+.samples{margin-top:0.4rem;overflow-y:auto;flex:1}
+.chip{display:block;width:100%;text-align:left;padding:0.4rem 0.55rem;background:rgba(30,41,59,0.5);border:1px solid #1e293b;border-radius:6px;color:#94a3b8;font-family:'JetBrains Mono',monospace;font-size:0.58rem;cursor:pointer;margin-bottom:0.25rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip:hover{background:rgba(34,211,238,0.08);border-color:rgba(34,211,238,0.3);color:#22d3ee}
+.trace-hdr{display:flex;align-items:center;gap:0.6rem;margin-bottom:0.8rem;padding-bottom:0.6rem;border-bottom:1px solid #1e293b}
+.trace-hdr h2{font-size:0.8rem;font-weight:600}
+.trace-id{font-size:0.55rem;color:#475569}
+.badge-status{font-size:0.6rem;padding:0.15rem 0.55rem;border-radius:999px;font-weight:600}
+.badge-status.done{background:rgba(34,197,94,0.15);color:#22c55e;border:1px solid rgba(34,197,94,0.3)}
+.badge-status.blocked{background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3)}
+.badge-status.running{background:rgba(251,191,36,0.15);color:#fbbf24;border:1px solid rgba(251,191,36,0.3)}
+.step{margin-bottom:0.4rem}
+.step-card{border-radius:10px;border:1px solid;overflow:hidden}
+.step-hdr{display:flex;align-items:center;gap:0.5rem;padding:0.5rem 0.7rem;cursor:pointer}
+.step-icon{font-size:1rem;flex-shrink:0}
+.step-title{font-size:0.7rem;font-weight:600}
+.step-ms{font-size:0.55rem;margin-left:auto;opacity:0.6}
+.step-body{padding:0.5rem 0.7rem 0.7rem 2.1rem;font-size:0.6rem;line-height:1.5;white-space:pre-wrap;border-top:1px solid rgba(255,255,255,0.05)}
+.step-body pre{background:rgba(0,0,0,0.25);padding:0.4rem 0.6rem;border-radius:6px;font-size:0.58rem;margin:0.3rem 0;overflow-x:auto}
+.green{border-color:rgba(34,197,94,0.3);background:rgba(34,197,94,0.06)}
+.green .step-hdr{background:rgba(34,197,94,0.1)}
+.green .step-title{color:#4ade80}
+.green .step-body{color:#86efac}
+.amber{border-color:rgba(251,191,36,0.3);background:rgba(251,191,36,0.06)}
+.amber .step-hdr{background:rgba(251,191,36,0.1)}
+.amber .step-title{color:#fbbf24}
+.amber .step-body{color:#fcd34d}
+.red{border-color:rgba(239,68,68,0.3);background:rgba(239,68,68,0.06)}
+.red .step-hdr{background:rgba(239,68,68,0.1)}
+.red .step-title{color:#f87171}
+.red .step-body{color:#fca5a5}
+.blue{border-color:rgba(59,130,246,0.3);background:rgba(59,130,246,0.06)}
+.blue .step-hdr{background:rgba(59,130,246,0.1)}
+.blue .step-title{color:#60a5fa}
+.blue .step-body{color:#93bbfd}
+.violet{border-color:rgba(167,139,250,0.3);background:rgba(167,139,250,0.06)}
+.violet .step-hdr{background:rgba(167,139,250,0.1)}
+.violet .step-title{color:#a78bfa}
+.violet .step-body{color:#c4b5fd}
+.cyan{border-color:rgba(34,211,238,0.3);background:rgba(34,211,238,0.06)}
+.cyan .step-hdr{background:rgba(34,211,238,0.1)}
+.cyan .step-title{color:#22d3ee}
+.cyan .step-body{color:#67e8f9}
+.summary{margin-top:1.2rem;padding:0.9rem 1.1rem;border-radius:12px;border:2px solid rgba(34,197,94,0.4);background:rgba(34,197,94,0.08)}
+.summary h3{font-size:0.75rem;color:#4ade80;margin-bottom:0.4rem}
+.kv{display:flex;gap:1.5rem;flex-wrap:wrap}
+.kv-item{font-size:0.6rem}
+.kv-label{color:#64748b}
+.kv-value{color:#e2e8f0;font-weight:600}
+.empty{text-align:center;padding:4rem 2rem;color:#475569}
+.empty .ic{font-size:3rem;margin-bottom:0.6rem}
+.empty p{font-size:0.7rem;line-height:1.6}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#1e293b;border-radius:3px}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="pulse"></div>
+  <h1>Telecom Agentic Orchestration Engine</h1>
+  <span class="badge">PoC — In-Browser Demo</span>
+  <span style="margin-left:auto;font-size:0.55rem;color:#475569;">Cache-First · Data-Sovereign · Cloud-Reasoned</span>
+</div>
+
+<div class="main">
+<div class="panel panel-left">
+  <div class="lbl">Service Request</div>
+  <textarea id="prompt" placeholder="Enter TMF640/TMF641 JSON or unstructured text...&#10;&#10;e.g. activate new mobile service 088888 for retail customer with gold SLA"></textarea>
+  <div class="btn-row">
+    <button class="btn-primary" id="btn-go" onclick="run()">▶ Execute</button>
+    <button class="btn-secondary" onclick="reset()">Clear</button>
+  </div>
+  <div class="lbl" style="margin-top:0.8rem;">Sample Requests</div>
+  <div class="samples" id="samples"></div>
+</div>
+
+<div class="panel panel-right" id="right">
+  <div class="empty" id="empty"><div class="ic">⚙️</div><p>Submit a request to see the 10-stage pipeline in action.<br><br>Steps are color-coded by phase.</p></div>
+  <div id="trace" style="display:none">
+    <div class="trace-hdr"><h2>Pipeline Trace</h2><span class="trace-id" id="oid"></span><span class="badge-status running" id="bstatus" style="margin-left:auto;">RUNNING</span></div>
+    <div id="steps"></div><div id="sum"></div>
+  </div>
+</div>
+</div>
+
+<script>
+// ── Data Masker ──
+const MSISDN_RE = /\+?\d{5,15}/g;
+const IP_RE = /\b(?:\d{1,3}\.){3}\d{1,3}\b/g;
+const HOST_RE = /\b[a-zA-Z0-9](?:[a-zA-Z0-9\-]*[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9\-]*[a-zA-Z0-9])?)+\b/g;
+
+function masker() {
+  const map = {}, ctr = {msisdn:0,ip:0,ch:0};
+  return {
+    mask(text) {
+      text = text.replace(MSISDN_RE, m => {
+        if (map[m]) return map[m];
+        ctr.msisdn++; const t = `VAR_MSISDN_${ctr.msisdn}`; map[t]=m; map[m]=t; return t;
+      });
+      text = text.replace(IP_RE, m => {
+        if (map[m]) return map[m];
+        ctr.ip++; const t = `VAR_IP_${ctr.ip}`; map[t]=m; map[m]=t; return t;
+      });
+      const tokens = {};
+      for (const [k,v] of Object.entries(map)) if (k.startsWith('VAR_')) tokens[k]=v;
+      return {text, tokens};
+    }
+  };
+}
+
+// ── Stub Plans ──
+const PLANS = {
+  mobile: {workflows:["HLR_Provisioning","IMS_Registration","APN_Configuration","Charging_Rule_Setup"],params:{msisdn:"VAR_MSISDN_1",apn:"internet",qos:"gold",cmds:["ADD_SUBSCRIBER","SET_APN","ENABLE_VOLTE"]},devices:["HLR","IMS-Core","PCRF","SMSC"],kb:"3GPP TS 29.002 (MAP), 3GPP TS 23.040 (SMS), GSMA IR.92 (VoLTE)"},
+  l3vpn: {workflows:["ResourceAllocation","DeviceConfiguration","PeeringConfiguration","ServiceVerification"],params:{vrf:"CUST-{site}-CORP",asn:65001,mtu:9100,redundancy:"dual_pe_diverse"},devices:["PE-RTR-01","PE-RTR-02","Route-Reflector","NMS"],kb:"RFC 4364 (MPLS BGP VPNs), RFC 8299 (L3VPN YANG), MEF 6.2 (EVC Services)"},
+  sdwan: {workflows:["CPE_Deployment","Tunnel_Setup","Policy_Configuration","SLA_Verification"],params:{transport:["MPLS","Internet"],encryption:"IPSec",ctrl:"sdwan-ctrl-01"},devices:["vCPE-TYO","vCPE-SIN","vCPE-SYD","SD-WAN-Ctrl"],kb:"MEF 70 (SD-WAN Service Attributes), RFC 7348 (VXLAN)"},
+  broadband: {workflows:["ONT_Provisioning","VLAN_Assignment","IP_Pool_Allocation","Speed_Profile_Apply"],params:{ont:"NOKIA-G-010G",vlan:1001,speed:"1Gbps"},devices:["OLT-01","BNG-01","RADIUS-01","EMS"],kb:"TR-069 (CWMP), TR-383 (Common YANG Modules for Access Networks)"},
+};
+
+const BLOCKED = ["erase","reload","format","shutdown","no switchport","write erase","delete startup-config","boot system flash"];
+
+function detect(text) {
+  const t = text.toLowerCase();
+  if (/mobile|msisdn|sim|activate.*service|voice|sms/.test(t)) return 'mobile';
+  if (/l3vpn|mpls|vpn|bgp|vrf/.test(t) && !/sd.?wan/.test(t)) return 'l3vpn';
+  if (/sd.?wan/.test(t)) return 'sdwan';
+  if (/broadband|ftth|fiber|ont|olt/.test(t)) return 'broadband';
+  return 'mobile';
+}
+
+function uid(len=6) { return Array.from(crypto.getRandomValues(new Uint8Array(len)),b=>(b%16).toString(16)).join('').toUpperCase(); }
+
+// ── Pipeline ──
+const trace=[];
+let t0,totalMs,oid;
+
+function push(stage,status,title,detail,color,icon) {
+  trace.push({stage,status,title,detail,color,icon,ms:Date.now()-t0});
+  renderStep(trace.length-1);
+}
+
+function renderStep(i) {
+  const s = trace[i], cls = s.color;
+  const div = document.createElement('div'); div.className='step';
+  div.style.animationDelay = `${i * 0.1}s`;
+  div.style.animation = 'slideIn 0.35s ease-out forwards';
+  div.innerHTML = `<div class="step-card ${cls}"><div class="step-hdr" onclick="this.parentElement.querySelector('.step-body').classList.toggle('hidden')"><span class="step-icon">${s.icon}</span><span class="step-title">${s.title}</span><span class="step-ms">${s.ms}ms</span></div><div class="step-body">${h(s.detail)}</div></div>`;
+  document.getElementById('steps').appendChild(div);
+  document.getElementById('right').scrollTop = document.getElementById('right').scrollHeight;
+}
+
+function h(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/```([^`]+)```/g,'<pre>$1</pre>'); }
+
+function sleep(ms) { return new Promise(r=>setTimeout(r,ms)); }
+
+async function run() {
+  const prompt = document.getElementById('prompt').value.trim();
+  if (!prompt) return;
+
+  const btn = document.getElementById('btn-go');
+  btn.disabled = true; btn.textContent = '⏳ Processing...';
+
+  trace.length = 0; t0 = Date.now();
+  document.getElementById('empty').style.display = 'none';
+  document.getElementById('trace').style.display = '';
+  document.getElementById('steps').innerHTML = '';
+  document.getElementById('sum').innerHTML = '';
+  document.getElementById('oid').textContent = '';
+  const bs = document.getElementById('bstatus');
+  bs.textContent = 'RUNNING'; bs.className = 'badge-status running';
+
+  // STAGE 0 — DETECT
+  const isJSON = prompt.trim().startsWith('{');
+  const fmt = isJSON ? 'tmf640' : 'unstructured';
+  if (isJSON) {
+    try { JSON.parse(prompt); } catch(e) {
+      push('DETECT','error','JSON Parse Error','Invalid JSON — aborting.','red','❌');
+      finish('error'); return;
+    }
+  }
+  push('DETECT','done','Format Detection',isJSON?'Input is structured JSON → treating as TMF640 ServiceActivation':'Input is unstructured text → will parse via secure LLM path','cyan','🔍');
+  await sleep(300);
+
+  // STAGE 1 — MASK
+  const m = masker();
+  const {text:masked, tokens} = m.mask(prompt);
+  if (Object.keys(tokens).length) {
+    const items = Object.entries(tokens).slice(0,4).map(([k,v])=>`${k} → ${v}`).join('\n');
+    const extra = Object.keys(tokens).length > 4 ? `\n... (+${Object.keys(tokens).length-4} more)` : '';
+    push('MASK','done','Data Masking — Sensitive Identifiers Tokenized',`Masked ${Object.keys(tokens).length} identifiers before any cloud call:\n${items}${extra}\n\nCloud LLM will NEVER see real identifiers.`,'violet','🛡️');
+  } else {
+    push('MASK','done','Data Masking','No sensitive identifiers detected — request can proceed unmasked.','violet','🛡️');
+  }
+  await sleep(350);
+
+  // STAGE 2 — CACHE
+  const svc = detect(prompt);
+  push('CACHE','done','Redis Cache — MISS',`No cached pattern for <b>${svc}</b> service.\n→ Triggering secure fallback: masked data → Deepseek reasoning.`,'amber','📡');
+  await sleep(250);
+
+  // STAGE 3 — RAG
+  const plan = PLANS[svc] || PLANS['mobile'];
+  push('RAG','done','Knowledge Base RAG Lookup',`Loaded relevant standards from local KB:\n📄 ${plan.kb}\n\nContext will be injected into Deepseek prompt.`,'blue','📚');
+  await sleep(300);
+
+  // STAGE 4 — LLM
+  const preview = masked.length > 180 ? masked.slice(0,180)+'...' : masked;
+  push('LLM','done','Deepseek v4 — Reasoning & Plan Generation',`Sent MASKED data to Deepseek:\n<pre>${preview}</pre>\nDeepseek returned abstract blueprint:\n• ${plan.workflows.length} workflows\n• ${Object.keys(plan.params).length} parameters\n\nNote: Blueprint uses tokens (VAR_*), not real identifiers.`,'blue','🧠');
+  await sleep(500);
+
+  // STAGE 5 — HYDRATE
+  if (Object.keys(tokens).length) {
+    let ps = JSON.stringify(plan);
+    for (const [tok,real] of Object.entries(tokens)) ps = ps.replaceAll(tok, real);
+    push('HYDRATE','done','Local Parameter Hydration',`Restored real identifiers from local token map.\nAll ${Object.keys(tokens).length} tokens resolved.\n\nPlan now contains real parameters ready for execution.`,'violet','💧');
+  } else {
+    push('HYDRATE','done','Local Parameter Hydration','No tokens to resolve — plan is already concrete.','violet','💧');
+  }
+  await sleep(250);
+
+  // STAGE 6 — WRITE-THROUGH
+  push('CACHE','done','Redis Write-Through',`Persisting orchestration plan to Redis.\nKey: sha256(${svc}+characteristics)\n\nNext identical request → &lt;5ms cache HIT.`,'green','💾');
+  await sleep(200);
+
+  // STAGE 7 — VALIDATE
+  const checkText = (JSON.stringify(plan) + ' ' + prompt).toLowerCase();
+  const blocked = BLOCKED.filter(kw => checkText.includes(kw));
+  if (blocked.length) {
+    push('VALIDATE','blocked','Security Gateway — BLOCKED 🚫',`DESTRUCTIVE KEYWORD DETECTED: <b>${blocked.join(', ')}</b>\n\nTransaction ABORTED. Alert raised.\nNo commands sent to devices.`,'red','🚫');
+    finish('blocked'); return;
+  }
+  push('VALIDATE','done','Security Gateway — PASSED ✓','Hard-gate checks completed:\n✓ Pydantic v2 schema validation\n✓ No destructive keywords detected\n✓ Range constraints satisfied (VLAN 1-4094, MTU 68-9216)\n✓ Regex sanitization passed\n\nProceeding to execution.','green','🔒');
+  await sleep(350);
+
+  // STAGE 8 — EXECUTE
+  const wfLines = plan.workflows.map((w,i) => `  ✓ ${w} → ${plan.devices[i] || 'DEV-'+i} (NETCONF OK)`);
+  push('EXECUTE','done','MCP Execution — Workflows Dispatched',`Orchestration plan deployed via MCP:\n${wfLines.join('\n')}\n\nAll ${plan.workflows.length} workflows completed successfully.\nDevices configured. Config committed.`,'amber','⚙️');
+  await sleep(500);
+
+  // STAGE 9 — VERIFY
+  const svcId = 'SVC-'+uid(6);
+  push('VERIFY','done','Verification & Pattern Learning',`Post-execution checks:\n✓ Service state: ACTIVE\n✓ All resources IN_SERVICE\n✓ End-to-end verification passed\n\nPattern confidence updated: 0.30 → 0.88\nStored to Redis for future cache hits.`,'green','✅');
+  await sleep(200);
+
+  finish('completed', svcId, plan);
+}
+
+function finish(status, svcId, plan) {
+  totalMs = Date.now() - t0;
+  oid = 'PO-'+uid(8);
+  document.getElementById('oid').textContent = oid;
+  const bs = document.getElementById('bstatus');
+  if (status === 'completed') { bs.textContent = 'COMPLETED'; bs.className = 'badge-status done'; }
+  else if (status === 'blocked') { bs.textContent = 'BLOCKED'; bs.className = 'badge-status blocked'; }
+  else { bs.textContent = 'ERROR'; bs.className = 'badge-status blocked'; }
+
+  if (status === 'completed' && svcId) {
+    setTimeout(() => {
+      document.getElementById('sum').innerHTML = `<div class="summary"><h3>✅ Orchestration Complete — ${totalMs}ms</h3><div class="kv"><div class="kv-item"><span class="kv-label">Order: </span><span class="kv-value">${oid}</span></div><div class="kv-item"><span class="kv-label">Service: </span><span class="kv-value">${svcId}</span></div><div class="kv-item"><span class="kv-label">State: </span><span class="kv-value">ACTIVE</span></div><div class="kv-item"><span class="kv-label">Workflows: </span><span class="kv-value">${plan.workflows.length}</span></div><div class="kv-item"><span class="kv-label">Resources: </span><span class="kv-value">${Object.keys(plan.params).length}</span></div></div></div>`;
+    }, 500);
+  }
+  document.getElementById('btn-go').disabled = false;
+  document.getElementById('btn-go').textContent = '▶ Execute';
+}
+
+function reset() {
+  document.getElementById('prompt').value='';
+  document.getElementById('trace').style.display='none';
+  document.getElementById('empty').style.display='';
+  document.getElementById('steps').innerHTML='';
+  document.getElementById('sum').innerHTML='';
+}
+
+// ── Samples ──
+const samples = [
+  {label:'TMF640 — Activate Mobile Service',text:'{"serviceId":"MSISDN-088888","action":"activate","characteristic":[{"name":"customerSegment","value":"retail"},{"name":"slaTier","value":"gold"},{"name":"productId","value":"mobile-voice"},{"name":"msisdn","value":"088888"},{"name":"imsi","value":"310260123456789"}]}'},
+  {label:'Unstructured — Mobile Activation',text:'activate new mobile service 088888 for retail customer with gold SLA, IMSI 310260123456789, enable VoLTE and international roaming'},
+  {label:'TMF640 — Activate L3VPN',text:'{"serviceId":"svc-acme-sjc-l3vpn","action":"activate","characteristic":[{"name":"customerSegment","value":"wholesale"},{"name":"slaTier","value":"platinum"},{"name":"productId","value":"prod-l3vpn-01"},{"name":"pe_ip","value":"10.1.1.1"},{"name":"bandwidth","value":"1000"}]}'},
+  {label:'TMF641 — ServiceOrder L3VPN',text:'{"externalId":"CRM-12345","category":"VPN","action":"add","characteristic":[{"name":"customerSegment","value":"enterprise"},{"name":"slaTier","value":"gold"},{"name":"productId","value":"prod-l3vpn-01"},{"name":"sites","value":"3"}]}'},
+  {label:'Unstructured — SD-WAN',text:'deploy SD-WAN for branch offices in Tokyo, Singapore and Sydney, dual transport MPLS and Internet, IPSec encryption, enterprise segment, platinum SLA'},
+  {label:'Security Test — Blocked Keyword',text:'activate mobile service 088888 with gold SLA and shutdown all interfaces'},
+];
+const sc = document.getElementById('samples');
+samples.forEach(s=>{const b=document.createElement('button');b.className='chip';b.textContent=s.label;b.onclick=()=>{document.getElementById('prompt').value=s.text};sc.appendChild(b);});
+</script>
+</body>
+</html>
