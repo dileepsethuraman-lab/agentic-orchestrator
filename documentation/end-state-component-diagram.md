@@ -22,11 +22,11 @@ graph TB
 
     subgraph API["📡 API LAYER — FastAPI"]
         GW[FastAPI Gateway<br/>CORS Middleware<br/>Request Logging<br/>Auth Middleware]
-        TMF622[POST /tmf622/productOrder<br/>GET /tmf622/productOrder/{id}<br/>POST .../{id}/cancel]
-        TMF641[POST /tmf641/serviceOrder<br/>GET /tmf641/serviceOrder/{id}]
-        TMF640[POST /tmf640/service<br/>GET /tmf640/service/{id}]
-        TMF638[GET /tmf638/service<br/>GET /tmf638/service/{id}]
-        TMF639[GET /tmf639/resource<br/>GET /tmf639/resource/{id}]
+        TMF622["POST /tmf622/productOrder<br/>GET /tmf622/productOrder/{id}<br/>POST .../{id}/cancel"]
+        TMF641["POST /tmf641/serviceOrder<br/>GET /tmf641/serviceOrder/{id}"]
+        TMF640["POST /tmf640/service<br/>GET /tmf640/service/{id}"]
+        TMF638["GET /tmf638/service<br/>GET /tmf638/service/{id}"]
+        TMF639["GET /tmf639/resource<br/>GET /tmf639/resource/{id}"]
         INTERNAL[Internal APIs<br/>patterns · subscribers<br/>locks · notifications<br/>health · metrics]
     end
 
@@ -103,7 +103,7 @@ graph TB
 
     subgraph Notify["📬 NOTIFICATION LAYER"]
         WEBHOOK[WebhookManager<br/>CRM callbacks<br/>HMAC-SHA256 signed<br/>exponential backoff<br/>dead-letter queue]
-        GW_NOTIFY[Gateway Notifier<br/>Telegram → ops channel<br/>Discord → #telco-orch<br/>Slack → #provisioning]
+        GW_NOTIFY[Gateway Notifier<br/>Telegram → ops channel<br/>Discord → telco-orch<br/>Slack → provisioning]
     end
 
     subgraph Frontend["🖥️ FRONTEND — React/Next.js"]
@@ -179,9 +179,9 @@ graph TB
     WEBHOOK -.->|POST callback| SF
     WEBHOOK -.->|POST callback| DYN
     WEBHOOK -.->|POST callback| CRM_CUSTOM
-    GW_NOTIFY -->|Telegram| TG[Telegram Ops]
-    GW_NOTIFY -->|Discord| DC[Discord #telco]
-    GW_NOTIFY -->|Slack| SL[Slack #provision]
+    GW_NOTIFY -->|Telegram| TG["Telegram Ops"]
+    GW_NOTIFY -->|Discord| DC["Discord telco"]
+    GW_NOTIFY -->|Slack| SL["Slack provision"]
 
     %% Frontend
     GW -->|REST API| DASH
