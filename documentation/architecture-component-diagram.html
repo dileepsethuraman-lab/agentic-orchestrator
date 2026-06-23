@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Telecom Agentic Orchestration Engine — Architecture</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'JetBrains Mono', monospace;
+      background: #020617;
+      min-height: 100vh;
+      padding: 2rem;
+      color: white;
+    }
+    .container { max-width: 1200px; margin: 0 auto; }
+    .header { margin-bottom: 2rem; }
+    .header-row { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem; }
+    .pulse-dot { width: 12px; height: 12px; background: #22d3ee; border-radius: 50%; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.025em; }
+    .subtitle { color: #94a3b8; font-size: 0.875rem; margin-left: 1.75rem; }
+    .diagram-container {
+      background: rgba(15, 23, 42, 0.5);
+      border-radius: 1rem;
+      border: 1px solid #1e293b;
+      padding: 1.5rem;
+      overflow-x: auto;
+    }
+    svg { width: 100%; min-width: 1000px; display: block; }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+    .card {
+      background: rgba(15, 23, 42, 0.5);
+      border-radius: 0.75rem;
+      border: 1px solid #1e293b;
+      padding: 1.25rem;
+    }
+    .card-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; }
+    .card-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .card-dot.cyan { background: #22d3ee; }
+    .card-dot.emerald { background: #34d399; }
+    .card-dot.violet { background: #a78bfa; }
+    .card-dot.amber { background: #fbbf24; }
+    .card-dot.rose { background: #fb7185; }
+    .card-dot.orange { background: #fb923c; }
+    .card h3 { font-size: 0.875rem; font-weight: 600; }
+    .card ul { list-style: none; color: #94a3b8; font-size: 0.75rem; }
+    .card li { margin-bottom: 0.375rem; }
+    .footer { text-align: center; margin-top: 1.5rem; color: #475569; font-size: 0.75rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="header-row">
+        <div class="pulse-dot"></div>
+        <h1>Telecom Agentic Orchestration Engine</h1>
+      </div>
+      <p class="subtitle">Cache-First · Data-Sovereign · Cloud-Reasoned · TMF-Standards Compliant</p>
+    </div>
+
+    <div class="diagram-container">
+      <svg viewBox="0 0 1100 820">
+        <defs>
+          <marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#64748b" />
+          </marker>
+          <marker id="arrow-cyan" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#22d3ee" />
+          </marker>
+          <marker id="arrow-emerald" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#34d399" />
+          </marker>
+          <marker id="arrow-amber" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#fbbf24" />
+          </marker>
+          <marker id="arrow-rose" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#fb7185" />
+          </marker>
+          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5"/>
+          </pattern>
+        </defs>
+
+        <rect width="100%" height="100%" fill="url(#grid)" />
+
+        <!-- ================================================================= -->
+        <!-- LAYER BOUNDARIES                                                    -->
+        <!-- ================================================================= -->
+
+        <!-- Northbound (External) Layer -->
+        <rect x="15" y="15" width="1070" height="106" rx="10" fill="transparent" stroke="#64748b" stroke-width="1" stroke-dasharray="6,3"/>
+        <text x="25" y="32" fill="#64748b" font-size="9" font-weight="600">NORTHBOUND — CRM Systems & Clients</text>
+
+        <!-- Edge Layer -->
+        <rect x="15" y="136" width="1070" height="62" rx="10" fill="transparent" stroke="#22c55e" stroke-width="1" stroke-dasharray="6,3"/>
+        <text x="25" y="153" fill="#22c55e" font-size="9" font-weight="600">EDGE — Nginx API Gateway</text>
+
+        <!-- Core Pipeline Layer -->
+        <rect x="15" y="213" width="1070" height="347" rx="10" fill="transparent" stroke="#34d399" stroke-width="1" stroke-dasharray="6,3"/>
+        <text x="25" y="230" fill="#34d399" font-size="9" font-weight="600">CORE — Orchestration Engine & 14-Stage Pipeline</text>
+
+        <!-- Storage Layer -->
+        <rect x="15" y="575" width="1070" height="108" rx="10" fill="transparent" stroke="#a78bfa" stroke-width="1" stroke-dasharray="6,3"/>
+        <text x="25" y="592" fill="#a78bfa" font-size="9" font-weight="600">PERSISTENT STORES & KNOWLEDGE BASE</text>
+
+        <!-- Southbound Layer -->
+        <rect x="15" y="698" width="1070" height="108" rx="10" fill="transparent" stroke="#fbbf24" stroke-width="1" stroke-dasharray="6,3"/>
+        <text x="25" y="715" fill="#fbbf24" font-size="9" font-weight="600">SOUTHBOUND — MCP Servers & Network Devices</text>
+
+        <!-- ================================================================= -->
+        <!-- ARROWS (drawn behind components — z-order)                        -->
+        <!-- ================================================================= -->
+
+        <!-- CRM → Nginx -->
+        <line x1="180" y1="80" x2="180" y2="148" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow)"/>
+        <line x1="380" y1="80" x2="380" y2="148" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow)"/>
+        <line x1="580" y1="80" x2="580" y2="148" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+        <!-- Nginx → API Gateway -->
+        <line x1="540" y1="167" x2="540" y2="225" stroke="#22c55e" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+        <!-- API → Pipeline stages (horizontal flow) -->
+        <line x1="230" y1="278" x2="310" y2="278" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow)"/>
+        <line x1="430" y1="278" x2="490" y2="278" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow)"/>
+        <line x1="610" y1="278" x2="670" y2="278" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow)"/>
+        <line x1="790" y1="278" x2="850" y2="278" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+        <!-- Pipeline branch arrows (HIT/MISS) -->
+        <line x1="400" y1="258" x2="400" y2="296" stroke="#fbbf24" stroke-width="1.5" marker-end="url(#arrow-amber)"/>
+        <text x="408" y="282" fill="#fbbf24" font-size="7">HIT</text>
+
+        <line x1="550" y1="258" x2="550" y2="310" stroke="#fbbf24" stroke-width="1.5" marker-end="url(#arrow-amber)"/>
+        <text x="558" y="290" fill="#fbbf24" font-size="7">MISS</text>
+
+        <!-- Pipeline → Validation → Execute -->
+        <line x1="950" y1="310" x2="1000" y2="310" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow)"/>
+        <!-- Validation BLOCK path -->
+        <line x1="1015" y1="296" x2="1015" y2="246" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="4,4" marker-end="url(#arrow-rose)"/>
+        <text x="1023" y="275" fill="#fb7185" font-size="6">BLOCK</text>
+
+        <!-- Core → Stores -->
+        <line x1="200" y1="548" x2="200" y2="585" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#arrow)"/>
+        <line x1="420" y1="548" x2="420" y2="585" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#arrow)"/>
+        <line x1="640" y1="548" x2="640" y2="585" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#arrow)"/>
+        <line x1="860" y1="548" x2="860" y2="585" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+        <!-- Execute → MCP → Devices -->
+        <line x1="1020" y1="340" x2="1020" y2="710" stroke="#fbbf24" stroke-width="1.5" marker-end="url(#arrow-amber)"/>
+
+        <line x1="130" y1="710" x2="130" y2="765" stroke="#fbbf24" stroke-width="1.5" marker-end="url(#arrow-amber)"/>
+        <line x1="350" y1="710" x2="350" y2="765" stroke="#fbbf24" stroke-width="1.5" marker-end="url(#arrow-amber)"/>
+        <line x1="570" y1="710" x2="570" y2="765" stroke="#fbbf24" stroke-width="1.5" marker-end="url(#arrow-amber)"/>
+
+        <!-- ================================================================= -->
+        <!-- LAYER 1: NORTHBOUND — CRM & Clients                                -->
+        <!-- ================================================================= -->
+
+        <!-- CRM: Salesforce -->
+        <rect x="80" y="50" width="200" height="55" rx="6" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="180" y="71" fill="white" font-size="11" font-weight="600" text-anchor="middle">CRM Systems</text>
+        <text x="180" y="88" fill="#94a3b8" font-size="8" text-anchor="middle">Salesforce / Dynamics 365</text>
+        <text x="180" y="100" fill="#64748b" font-size="7" text-anchor="middle">TMF622 Product Orders</text>
+
+        <!-- API Clients -->
+        <rect x="310" y="50" width="140" height="55" rx="6" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="380" y="71" fill="white" font-size="11" font-weight="600" text-anchor="middle">API Clients</text>
+        <text x="380" y="88" fill="#94a3b8" font-size="8" text-anchor="middle">TMF640/641 JSON</text>
+
+        <!-- Unstructured Text -->
+        <rect x="480" y="50" width="200" height="55" rx="6" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="580" y="71" fill="white" font-size="11" font-weight="600" text-anchor="middle">NOC Operators</text>
+        <text x="580" y="88" fill="#94a3b8" font-size="8" text-anchor="middle">Unstructured Text</text>
+
+        <!-- Web UI -->
+        <rect x="710" y="50" width="160" height="55" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="790" y="71" fill="white" font-size="11" font-weight="600" text-anchor="middle">Web Dashboard</text>
+        <text x="790" y="88" fill="#94a3b8" font-size="8" text-anchor="middle">Trace Viewer UI</text>
+
+        <!-- ================================================================= -->
+        <!-- LAYER 2: EDGE — Nginx                                              -->
+        <!-- ================================================================= -->
+
+        <!-- Nginx Gateway -->
+        <rect x="440" y="148" width="200" height="42" rx="6" fill="rgba(6, 78, 59, 0.35)" stroke="#22c55e" stroke-width="1.5"/>
+        <text x="540" y="166" fill="white" font-size="11" font-weight="600" text-anchor="middle">Nginx :443</text>
+        <text x="540" y="181" fill="#94a3b8" font-size="8" text-anchor="middle">TLS / Auth / Rate Limit</text>
+
+        <!-- ================================================================= -->
+        <!-- LAYER 3: CORE — Orchestration Engine                               -->
+        <!-- ================================================================= -->
+
+        <!-- FastAPI Gateway -->
+        <rect x="75" y="240" width="200" height="55" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="175" y="261" fill="white" font-size="11" font-weight="600" text-anchor="middle">FastAPI Gateway</text>
+        <text x="175" y="278" fill="#94a3b8" font-size="8" text-anchor="middle">TMF622/641/640/638/639</text>
+        <text x="175" y="290" fill="#64748b" font-size="7" text-anchor="middle">Order Decomposer • Auth • CORS</text>
+
+        <!-- Order Processing -->
+        <rect x="310" y="240" width="120" height="55" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="370" y="261" fill="white" font-size="11" font-weight="600" text-anchor="middle">Order Mgr</text>
+        <text x="370" y="278" fill="#94a3b8" font-size="8" text-anchor="middle">Decompose</text>
+        <text x="370" y="290" fill="#64748b" font-size="7" text-anchor="middle">TMF622→641</text>
+
+        <!-- Message Queue -->
+        <rect x="470" y="240" width="120" height="55" rx="6" fill="rgba(251, 146, 60, 0.25)" stroke="#fb923c" stroke-width="1.5"/>
+        <text x="530" y="261" fill="white" font-size="11" font-weight="600" text-anchor="middle">RabbitMQ</text>
+        <text x="530" y="278" fill="#94a3b8" font-size="8" text-anchor="middle">orders · retry</text>
+        <text x="530" y="290" fill="#64748b" font-size="7" text-anchor="middle">dead-letter · assurance</text>
+
+        <!-- Worker Pool -->
+        <rect x="625" y="240" width="120" height="55" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="685" y="261" fill="white" font-size="11" font-weight="600" text-anchor="middle">Worker Pool</text>
+        <text x="685" y="278" fill="#94a3b8" font-size="8" text-anchor="middle">Hermes Agents</text>
+        <text x="685" y="290" fill="#64748b" font-size="7" text-anchor="middle">Skills · KB · MCP</text>
+
+        <!-- ================================================================= -->
+        <!-- PIPELINE STAGES — Bottom row of Core Layer                        -->
+        <!-- ================================================================= -->
+
+        <!-- Stage blocks — DETECT → VERIFY -->
+        <rect x="60" y="320" width="100" height="42" rx="5" fill="rgba(6, 78, 59, 0.3)" stroke="#34d399" stroke-width="1.2"/>
+        <text x="110" y="340" fill="white" font-size="10" font-weight="600" text-anchor="middle">DETECT</text>
+        <text x="110" y="354" fill="#4ade80" font-size="7" text-anchor="middle">format</text>
+
+        <rect x="175" y="320" width="100" height="42" rx="5" fill="rgba(136, 19, 55, 0.3)" stroke="#fb7185" stroke-width="1.2"/>
+        <text x="225" y="340" fill="white" font-size="10" font-weight="600" text-anchor="middle">MASK</text>
+        <text x="225" y="354" fill="#fb7185" font-size="7" text-anchor="middle">MSISDN/IP→VAR_*</text>
+
+        <rect x="290" y="320" width="100" height="42" rx="5" fill="rgba(76, 29, 149, 0.3)" stroke="#a78bfa" stroke-width="1.2"/>
+        <text x="340" y="340" fill="white" font-size="10" font-weight="600" text-anchor="middle">CACHE</text>
+        <text x="340" y="354" fill="#a78bfa" font-size="7" text-anchor="middle">Pattern Match</text>
+
+        <rect x="405" y="320" width="100" height="42" rx="5" fill="rgba(6, 78, 59, 0.3)" stroke="#34d399" stroke-width="1.2"/>
+        <text x="455" y="340" fill="white" font-size="10" font-weight="600" text-anchor="middle">HYDRATE</text>
+        <text x="455" y="354" fill="#4ade80" font-size="7" text-anchor="middle">VAR_*→real</text>
+
+        <rect x="520" y="320" width="100" height="42" rx="5" fill="rgba(6, 78, 59, 0.3)" stroke="#34d399" stroke-width="1.2"/>
+        <text x="570" y="340" fill="white" font-size="10" font-weight="600" text-anchor="middle">MERGE</text>
+        <text x="570" y="354" fill="#4ade80" font-size="7" text-anchor="middle">cascade chars</text>
+
+        <rect x="635" y="320" width="100" height="42" rx="5" fill="rgba(136, 19, 55, 0.3)" stroke="#fb7185" stroke-width="1.2"/>
+        <text x="685" y="340" fill="white" font-size="10" font-weight="600" text-anchor="middle">VALIDATE</text>
+        <text x="685" y="354" fill="#fb7185" font-size="7" text-anchor="middle">blocked words</text>
+
+        <rect x="750" y="320" width="100" height="42" rx="5" fill="rgba(6, 78, 59, 0.3)" stroke="#34d399" stroke-width="1.2"/>
+        <text x="800" y="340" fill="white" font-size="10" font-weight="600" text-anchor="middle">EXECUTE</text>
+        <text x="800" y="354" fill="#4ade80" font-size="7" text-anchor="middle">dispatch MCP</text>
+
+        <rect x="865" y="320" width="80" height="42" rx="5" fill="rgba(6, 78, 59, 0.3)" stroke="#34d399" stroke-width="1.2"/>
+        <text x="905" y="340" fill="white" font-size="10" font-weight="600" text-anchor="middle">VERIFY</text>
+        <text x="905" y="354" fill="#4ade80" font-size="7" text-anchor="middle">save model</text>
+
+        <!-- ABORT node -->
+        <rect x="970" y="230" width="90" height="32" rx="5" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="4,4"/>
+        <text x="1015" y="250" fill="#fb7185" font-size="9" font-weight="600" text-anchor="middle">ABORT</text>
+
+        <!-- ================================================================= -->
+        <!-- RAG + LLM row — placed above the pipeline stages                   -->
+        <!-- ================================================================= -->
+
+        <!-- RAG -->
+        <rect x="405" y="390" width="100" height="38" rx="5" fill="rgba(120, 53, 15, 0.25)" stroke="#fbbf24" stroke-width="1.2"/>
+        <text x="455" y="409" fill="white" font-size="10" font-weight="600" text-anchor="middle">RAG</text>
+        <text x="455" y="422" fill="#fbbf24" font-size="7" text-anchor="middle">KB context</text>
+
+        <!-- LLM -->
+        <rect x="520" y="390" width="100" height="38" rx="5" fill="rgba(120, 53, 15, 0.25)" stroke="#fbbf24" stroke-width="1.2"/>
+        <text x="570" y="409" fill="white" font-size="10" font-weight="600" text-anchor="middle">LLM</text>
+        <text x="570" y="422" fill="#fbbf24" font-size="7" text-anchor="middle">Deepseek v4</text>
+
+        <!-- Arrow from CACHE MISS to RAG -->
+        <line x1="370" y1="340" x2="370" y2="408" stroke="#fbbf24" stroke-width="1.2" marker-end="url(#arrow-amber)"/>
+        <text x="378" y="378" fill="#fbbf24" font-size="6">MISS</text>
+
+        <!-- RAG → LLM arrow -->
+        <line x1="505" y1="409" x2="518" y2="409" stroke="#fbbf24" stroke-width="1.2" marker-end="url(#arrow-amber)"/>
+
+        <!-- LLM → HYDRATE arrow -->
+        <line x1="520" y1="409" x2="455" y2="360" stroke="#fbbf24" stroke-width="1.2"/>
+
+        <!-- ================================================================= -->
+        <!-- LOCK stage                                                        -->
+        <!-- ================================================================= -->
+
+        <rect x="60" y="440" width="120" height="38" rx="5" fill="rgba(6, 78, 59, 0.3)" stroke="#34d399" stroke-width="1.2"/>
+        <text x="120" y="459" fill="white" font-size="10" font-weight="600" text-anchor="middle">LOCK</text>
+        <text x="120" y="472" fill="#4ade80" font-size="7" text-anchor="middle">Subscriber Lock</text>
+
+        <!-- NOTIFY stage -->
+        <rect x="200" y="440" width="120" height="38" rx="5" fill="rgba(6, 78, 59, 0.3)" stroke="#34d399" stroke-width="1.2"/>
+        <text x="260" y="459" fill="white" font-size="10" font-weight="600" text-anchor="middle">NOTIFY</text>
+        <text x="260" y="472" fill="#4ade80" font-size="7" text-anchor="middle">TMF641 Events</text>
+
+        <!-- STORE stage -->
+        <rect x="340" y="440" width="120" height="38" rx="5" fill="rgba(6, 78, 59, 0.3)" stroke="#34d399" stroke-width="1.2"/>
+        <text x="400" y="459" fill="white" font-size="10" font-weight="600" text-anchor="middle">STORE</text>
+        <text x="400" y="472" fill="#4ade80" font-size="7" text-anchor="middle">Learn Pattern</text>
+
+        <!-- ================================================================= -->
+        <!-- Subscriber Model section                                          -->
+        <!-- ================================================================= -->
+
+        <rect x="500" y="440" width="180" height="55" rx="6" fill="rgba(76, 29, 149, 0.25)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="590" y="460" fill="white" font-size="10" font-weight="600" text-anchor="middle">Service Model Store</text>
+        <text x="590" y="475" fill="#94a3b8" font-size="8" text-anchor="middle">build · save · diff · validate</text>
+        <text x="590" y="489" fill="#a78bfa" font-size="7" text-anchor="middle">corruption self-healing</text>
+
+        <!-- Notifications output -->
+        <rect x="700" y="440" width="180" height="55" rx="6" fill="rgba(30, 41, 59, 0.5)" stroke="#64748b" stroke-width="1.5"/>
+        <text x="790" y="460" fill="white" font-size="10" font-weight="600" text-anchor="middle">Webhooks & Gateway</text>
+        <text x="790" y="475" fill="#94a3b8" font-size="8" text-anchor="middle">CRM Callback · Telegram</text>
+        <text x="790" y="489" fill="#64748b" font-size="7" text-anchor="middle">Discord · Slack</text>
+
+        <!-- ================================================================= -->
+        <!-- LAYER 4: PERSISTENT STORES                                          -->
+        <!-- ================================================================= -->
+
+        <!-- PostgreSQL -->
+        <rect x="90" y="610" width="180" height="55" rx="6" fill="rgba(76, 29, 149, 0.3)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="180" y="631" fill="white" font-size="11" font-weight="600" text-anchor="middle">PostgreSQL 16</text>
+        <text x="180" y="648" fill="#94a3b8" font-size="8" text-anchor="middle">catalog · inventory · audit</text>
+        <text x="180" y="660" fill="#a78bfa" font-size="7" text-anchor="middle">webhook_deliveries</text>
+
+        <!-- Redis -->
+        <rect x="310" y="610" width="180" height="55" rx="6" fill="rgba(76, 29, 149, 0.3)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="400" y="631" fill="white" font-size="11" font-weight="600" text-anchor="middle">Redis 7</text>
+        <text x="400" y="648" fill="#94a3b8" font-size="8" text-anchor="middle">task queue · patterns</text>
+        <text x="400" y="660" fill="#a78bfa" font-size="7" text-anchor="middle">rate limit · locks · cache</text>
+
+        <!-- Pattern Engine -->
+        <rect x="530" y="610" width="180" height="55" rx="6" fill="rgba(76, 29, 149, 0.3)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="620" y="631" fill="white" font-size="11" font-weight="600" text-anchor="middle">Pattern Engine</text>
+        <text x="620" y="648" fill="#94a3b8" font-size="8" text-anchor="middle">RDF Triples · Jaccard</text>
+        <text x="620" y="660" fill="#a78bfa" font-size="7" text-anchor="middle">lookup · learn · reinforce</text>
+
+        <!-- Knowledge Base -->
+        <rect x="750" y="610" width="180" height="55" rx="6" fill="rgba(76, 29, 149, 0.3)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="840" y="631" fill="white" font-size="11" font-weight="600" text-anchor="middle">Knowledge Base</text>
+        <text x="840" y="648" fill="#94a3b8" font-size="8" text-anchor="middle">ontologies · products</text>
+        <text x="840" y="660" fill="#a78bfa" font-size="7" text-anchor="middle">workflows · standards</text>
+
+        <!-- ================================================================= -->
+        <!-- LAYER 5: SOUTHBOUND — MCP + Devices                                -->
+        <!-- ================================================================= -->
+
+        <!-- NetBox MCP -->
+        <rect x="45" y="730" width="140" height="42" rx="6" fill="rgba(120, 53, 15, 0.25)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="115" y="749" fill="white" font-size="10" font-weight="600" text-anchor="middle">NetBox MCP</text>
+        <text x="115" y="764" fill="#fbbf24" font-size="8" text-anchor="middle">IPAM / DCIM</text>
+
+        <!-- Ansible MCP -->
+        <rect x="210" y="730" width="140" height="42" rx="6" fill="rgba(120, 53, 15, 0.25)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="280" y="749" fill="white" font-size="10" font-weight="600" text-anchor="middle">Ansible MCP</text>
+        <text x="280" y="764" fill="#fbbf24" font-size="8" text-anchor="middle">Config Push</text>
+
+        <!-- NSO MCP -->
+        <rect x="375" y="730" width="140" height="42" rx="6" fill="rgba(120, 53, 15, 0.25)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="445" y="749" fill="white" font-size="10" font-weight="600" text-anchor="middle">Cisco NSO MCP</text>
+        <text x="445" y="764" fill="#fbbf24" font-size="8" text-anchor="middle">Service Activ.</text>
+
+        <!-- Device MCP -->
+        <rect x="540" y="730" width="140" height="42" rx="6" fill="rgba(120, 53, 15, 0.25)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="610" y="749" fill="white" font-size="10" font-weight="600" text-anchor="middle">Device MCP</text>
+        <text x="610" y="764" fill="#fbbf24" font-size="8" text-anchor="middle">CLI / NETCONF</text>
+
+        <!-- Network Devices (large) -->
+        <rect x="720" y="730" width="210" height="55" rx="6" fill="rgba(30, 41, 59, 0.5)" stroke="#64748b" stroke-width="1.5"/>
+        <text x="825" y="750" fill="white" font-size="10" font-weight="600" text-anchor="middle">Network Devices</text>
+        <text x="825" y="765" fill="#94a3b8" font-size="8" text-anchor="middle">PE Routers · HLR/HSS · OLT</text>
+        <text x="825" y="779" fill="#64748b" font-size="7" text-anchor="middle">vCPE · SBC · BNG</text>
+
+        <!-- ================================================================= -->
+        <!-- LEGEND                                                            -->
+        <!-- ================================================================= -->
+
+        <!-- Legend positioned outside all boundaries, far right -->
+        <rect x="960" y="580" width="125" height="100" rx="6" fill="rgba(15, 23, 42, 0.7)" stroke="#1e293b" stroke-width="1"/>
+        <text x="1022" y="596" fill="white" font-size="9" font-weight="600" text-anchor="middle">Legend</text>
+
+        <rect x="968" y="604" width="14" height="8" rx="2" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="0.8"/>
+        <text x="988" y="612" fill="#94a3b8" font-size="7">Frontend</text>
+
+        <rect x="968" y="618" width="14" height="8" rx="2" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="0.8"/>
+        <text x="988" y="626" fill="#94a3b8" font-size="7">Backend</text>
+
+        <rect x="968" y="632" width="14" height="8" rx="2" fill="rgba(76, 29, 149, 0.3)" stroke="#a78bfa" stroke-width="0.8"/>
+        <text x="988" y="640" fill="#94a3b8" font-size="7">Data Store</text>
+
+        <rect x="968" y="646" width="14" height="8" rx="2" fill="rgba(120, 53, 15, 0.25)" stroke="#fbbf24" stroke-width="0.8"/>
+        <text x="988" y="654" fill="#94a3b8" font-size="7">MCP / Cloud</text>
+
+        <rect x="968" y="660" width="14" height="8" rx="2" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="0.8"/>
+        <text x="988" y="668" fill="#94a3b8" font-size="7">Security</text>
+
+        <rect x="968" y="674" width="14" height="8" rx="2" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="0.8"/>
+        <text x="988" y="682" fill="#94a3b8" font-size="7">External</text>
+
+      </svg>
+    </div>
+
+    <div class="cards">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot cyan"></div>
+          <h3>Pipeline Architecture</h3>
+        </div>
+        <ul>
+          <li>• 14-stage async pipeline (foreground + background)</li>
+          <li>• Cache-first: Jaccard pattern match → sub-5ms hot path</li>
+          <li>• Cache-miss: mask → RAG → LLM → hydrate → learn</li>
+          <li>• Hard-gate validation with blocked keyword scanning</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot rose"></div>
+          <h3>Data Sovereignty</h3>
+        </div>
+        <ul>
+          <li>• DataMasker tokenizes MSISDN/IP/Hostname before cloud</li>
+          <li>• Token→real mapping in transient memory only</li>
+          <li>• Deepseek never sees real infrastructure identifiers</li>
+          <li>• BLOCKED_KEYWORDS: erase, reload, format, shutdown</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot amber"></div>
+          <h3>Standards Compliance</h3>
+        </div>
+        <ul>
+          <li>• TMF622 Product Order — decompose → ServiceOrders</li>
+          <li>• TMF641 Service Order — fulfill with audit trail</li>
+          <li>• TMF640 Service Activation — activate/deactivate</li>
+          <li>• TMF641 Notifications: Milestone + StateChange events</li>
+        </ul>
+      </div>
+    </div>
+
+    <p class="footer">
+      Telecom Agentic Orchestration Engine • PoC v2.0.0 @ poc/server_live.py (1,848 lines) • End-state: 7-phase build plan
+    </p>
+  </div>
+</body>
+</html>
