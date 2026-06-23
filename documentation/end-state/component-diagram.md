@@ -276,5 +276,5 @@ graph TB
 
 ---
 
-> **Source:** Derived from `documentation/end-state-architectural-blueprint.md` and `end-state-component-specification.md`.
+> **Source:** Derived from `end-state/architectural-blueprint.md` and `end-state/component-specification.md`.
 > **PoC Reference:** Current implementation at `poc/server_live.py` (1,848 lines) implements 7 of these 14 stages with stubbed MCP/EXECUTE.
