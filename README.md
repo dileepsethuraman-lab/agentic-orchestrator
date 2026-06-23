@@ -28,7 +28,6 @@ agentic-orchestrator/
 │
 ├── poc/                                   ← ★ PYTHON PoC (Production) — PORT 8090
 │   ├── server_live.py                     # Main server — 1,848 lines
-│   ├── server.py                          # Original stub server (reference)
 │   ├── static/index.html                  # Single-file Web UI — 727 lines
 │   ├── DESIGN.md                          # PoC design document
 │   ├── SYSTEM_ARCHITECTURE.md             # PoC architecture document
