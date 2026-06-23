@@ -52,7 +52,7 @@ graph TB
         direction TB
         S00[DETECT<br/>format detection<br/>JSON vs text]
         S01[MASK<br/>DataMasker<br/>MSISDN/IP → VAR_*]
-        S02[CACHE<br/>PatternEngine.lookup()<br/>Jaccard match]
+        S02["CACHE<br/>PatternEngine.lookup()<br/>Jaccard match"]
         S03[RAG<br/>KBLoader<br/>domain context]
         S04[LLM<br/>DeepseekClient<br/>cache-miss only]
         S05[HYDRATE<br/>Token reversal<br/>VAR_* → real]
@@ -116,7 +116,7 @@ graph TB
 
     subgraph CICD["🔄 CI/CD PIPELINE"]
         GIT[GitHub/GitLab<br/>source control]
-        TEST[Test Suite<br/>unit · integration<br/>E2E · load (5TPS)]
+        TEST["Test Suite<br/>unit · integration<br/>E2E · load (5TPS)"]
         DOCKER[Docker Build<br/>container images]
         DEPLOY[Deploy<br/>Docker Compose<br/>rolling updates]
     end
