@@ -926,6 +926,32 @@ A common approach that satisfies all requirements:
 - Thread/async execution capability
 - HTTP client for LLM API calls
 
+### 10.3 JSON Field Naming Convention (Critical)
+
+The frontend JavaScript expects **snake_case** field names in API responses. This is non-negotiable. Regardless of your implementation language's conventions:
+
+| POJO/DTO fields | Must serialize as |
+|----------------|-------------------|
+| `orderId` | `order_id` |
+| `totalMs` | `total_ms` |
+| `startedAt` | `started_at` |
+| `elapsedMs` | `elapsed_ms` |
+| `finalState` | `final_state` |
+| `useCount` | `use_count` |
+| `lastUsed` | `last_used` |
+| `serviceType` | `service_type` |
+
+**Map keys within `final_state` are camelCase** (not converted by JSON naming strategies):
+- `serviceId`, `workflowsExecuted`, `resourcesProvisioned`, `networkElements`
+- `patternId`, `patternConfidence`, `llmUsed`, `patternMatch`
+- `subscriberId`, `subscriberDiff`, `notificationCount`, `notifications`
+
+If your framework serializes object fields differently (e.g., Java Jackson defaults to camelCase, Go uses PascalCase), configure it to use snake_case for ALL JSON output. In Java Spring Boot: `spring.jackson.property-naming-strategy=SNAKE_CASE`.
+
+### 10.4 Server Binding
+
+Your HTTP server **must bind to `0.0.0.0`**, not `localhost`. Some frameworks (Spring Boot, Express) default to localhost-only binding, making the service unreachable from other network interfaces. Explicitly configure the bind address to `0.0.0.0`.
+
 ---
 
 > **End of Specification.** If you build a system that passes all 14 acceptance criteria in Section 8, you have successfully replicated the Telecom Agentic Orchestration Engine Proof of Concept.
