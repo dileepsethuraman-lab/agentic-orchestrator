@@ -3,422 +3,316 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Telecom Agentic Orchestration Engine — Architecture</title>
+  <title>Telecom Orchestration Engine — Technical Architecture</title>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: 'JetBrains Mono', monospace;
-      background: #020617;
-      min-height: 100vh;
-      padding: 2rem;
-      color: white;
+      background: #020617; min-height: 100vh; padding: 2rem; color: white;
     }
-    .container { max-width: 1300px; margin: 0 auto; }
+    .container { max-width: 1100px; margin: 0 auto; }
     .header { margin-bottom: 1.5rem; }
-    .header-row { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem; }
+    .header-row { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.3rem; }
     .pulse-dot { width: 12px; height: 12px; background: #22d3ee; border-radius: 50%; animation: pulse 2s infinite; }
-    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
     h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.025em; }
-    .subtitle { color: #94a3b8; font-size: 0.8rem; margin-left: 1.75rem; }
+    .subtitle { color: #64748b; font-size: 0.8rem; margin-left: 1.75rem; }
     .diagram-container {
-      background: rgba(15, 23, 42, 0.5);
-      border-radius: 1rem;
-      border: 1px solid #1e293b;
-      padding: 1.5rem;
-      overflow-x: auto;
+      background: rgba(15,23,42,0.5); border-radius: 1rem; border: 1px solid #1e293b;
+      padding: 1.5rem 1rem; overflow-x: auto;
     }
-    svg { width: 100%; min-width: 1100px; display: block; }
-    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 1rem; margin-top: 1.5rem; }
-    .card { background: rgba(15, 23, 42, 0.5); border-radius: 0.75rem; border: 1px solid #1e293b; padding: 1.25rem; }
+    svg { width: 100%; min-width: 1000px; display: block; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1rem; margin-top: 1.5rem; }
+    .card { background: rgba(15,23,42,0.5); border-radius: 0.75rem; border: 1px solid #1e293b; padding: 1.25rem; }
     .card-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; }
     .card-dot { width: 8px; height: 8px; border-radius: 50%; }
-    .card-dot.cyan { background: #22d3ee; }
-    .card-dot.emerald { background: #34d399; }
-    .card-dot.violet { background: #a78bfa; }
-    .card-dot.amber { background: #fbbf24; }
-    .card-dot.rose { background: #fb7185; }
-    .card-dot.orange { background: #fb923c; }
+    .card-dot.cyan { background: #22d3ee; } .card-dot.emerald { background: #34d399; }
+    .card-dot.violet { background: #a78bfa; } .card-dot.amber { background: #fbbf24; }
+    .card-dot.rose { background: #fb7185; } .card-dot.slate { background: #64748b; }
     .card h3 { font-size: 0.85rem; font-weight: 600; }
     .card ul { list-style: none; color: #94a3b8; font-size: 0.72rem; }
-    .card li { margin-bottom: 0.3rem; }
+    .card li { margin-bottom: 0.35rem; }
     .footer { text-align: center; margin-top: 1.5rem; color: #475569; font-size: 0.72rem; }
-    a { color: #22d3ee; text-decoration: none; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="header">
-      <div class="header-row">
-        <div class="pulse-dot"></div>
-        <h1>Telecom Agentic Orchestration Engine — Component Architecture</h1>
-      </div>
-      <p class="subtitle">Async, Cache-First Automated Orchestrator — 5 TPS, Data-Sovereign, Cloud-Reasoned</p>
-    </div>
-
-    <div class="diagram-container">
-      <svg viewBox="0 0 1200 1000">
-        <defs>
-          <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-            <polygon points="0 0, 10 3.5, 0 7" fill="#64748b" />
-          </marker>
-          <marker id="arrow-cyan" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-            <polygon points="0 0, 10 3.5, 0 7" fill="#22d3ee" />
-          </marker>
-          <marker id="arrow-rose" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-            <polygon points="0 0, 10 3.5, 0 7" fill="#fb7185" />
-          </marker>
-          <marker id="arrow-emerald" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-            <polygon points="0 0, 10 3.5, 0 7" fill="#34d399" />
-          </marker>
-          <marker id="arrow-orange" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-            <polygon points="0 0, 10 3.5, 0 7" fill="#fb923c" />
-          </marker>
-          <marker id="arrow-amber" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-            <polygon points="0 0, 10 3.5, 0 7" fill="#fbbf24" />
-          </marker>
-          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5"/>
-          </pattern>
-        </defs>
-
-        <rect width="100%" height="100%" fill="url(#grid)" />
-
-        <!-- ================================================================= -->
-        <!-- PHASE A: Traffic Ingestion (Northbound)                          -->
-        <!-- ================================================================= -->
-
-        <!-- Ingress Paths -->
-        <rect x="30" y="20" width="140" height="44" rx="6" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1.5"/>
-        <text x="100" y="38" fill="white" font-size="10" font-weight="600" text-anchor="middle">API Clients</text>
-        <text x="100" y="52" fill="#94a3b8" font-size="7" text-anchor="middle">JSON / TMF640+TMF641</text>
-
-        <rect x="30" y="76" width="140" height="36" rx="6" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1.5"/>
-        <text x="100" y="98" fill="white" font-size="10" font-weight="600" text-anchor="middle">NOC / Ops</text>
-
-        <rect x="30" y="124" width="140" height="36" rx="6" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1.5"/>
-        <text x="100" y="146" fill="white" font-size="10" font-weight="600" text-anchor="middle">Unstructured Text</text>
-
-        <!-- Arrows to Gateway -->
-        <line x1="170" y1="42" x2="218" y2="42" stroke="#22d3ee" stroke-width="1.5"/>
-        <line x1="170" y1="94" x2="218" y2="94" stroke="#22d3ee" stroke-width="1.5"/>
-        <line x1="170" y1="142" x2="218" y2="142" stroke="#22d3ee" stroke-width="1.5"/>
-        <text x="194" y="115" fill="#94a3b8" font-size="8" text-anchor="middle">TMF640</text>
-        <text x="194" y="126" fill="#94a3b8" font-size="8" text-anchor="middle">TMF641</text>
-
-        <!-- API Gateway -->
-        <rect x="220" y="58" width="150" height="100" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
-        <text x="295" y="78" fill="white" font-size="11" font-weight="600" text-anchor="middle">API Gateway</text>
-        <text x="295" y="93" fill="#94a3b8" font-size="8" text-anchor="middle">Nginx :443</text>
-        <text x="295" y="107" fill="#94a3b8" font-size="8" text-anchor="middle">TLS + Rate Limit</text>
-        <text x="295" y="121" fill="#94a3b8" font-size="8" text-anchor="middle">OAuth2 / API Key</text>
-        <text x="295" y="138" fill="#fb7185" font-size="7" text-anchor="middle">Auth + CORS</text>
-
-        <!-- Order Manager -->
-        <rect x="400" y="58" width="180" height="100" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
-        <text x="490" y="78" fill="white" font-size="11" font-weight="600" text-anchor="middle">Order Manager</text>
-        <text x="490" y="93" fill="#94a3b8" font-size="8" text-anchor="middle">FastAPI</text>
-        <text x="490" y="108" fill="#94a3b8" font-size="8" text-anchor="middle">POST /tmf640/serviceActivation</text>
-        <text x="490" y="123" fill="#94a3b8" font-size="8" text-anchor="middle">POST /tmf641/serviceOrder</text>
-        <text x="490" y="138" fill="#94a3b8" font-size="8" text-anchor="middle">→ Enqueue ServiceOrder</text>
-        <text x="490" y="153" fill="#34d399" font-size="7" text-anchor="middle">TMF640 + TMF641 + /ingest/text</text>
-
-        <!-- Gateway → Order Manager arrow -->
-        <line x1="370" y1="108" x2="398" y2="108" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-emerald)"/>
-        <text x="384" y="102" fill="#94a3b8" font-size="8" text-anchor="middle">JSON</text>
-
-        <!-- ================================================================= -->
-        <!-- PHASE A-B: Message Bus                                          -->
-        <!-- ================================================================= -->
-
-        <!-- RabbitMQ -->
-        <rect x="400" y="185" width="180" height="55" rx="6" fill="rgba(251, 146, 60, 0.3)" stroke="#fb923c" stroke-width="1.5"/>
-        <text x="490" y="208" fill="white" font-size="11" font-weight="600" text-anchor="middle">RabbitMQ Buffer</text>
-        <text x="490" y="223" fill="#94a3b8" font-size="8" text-anchor="middle">prefetch_count=1</text>
-        <text x="490" y="235" fill="#fb923c" font-size="7" text-anchor="middle">fair-dispatch</text>
-
-        <!-- Order Manager → RabbitMQ arrow -->
-        <line x1="490" y1="158" x2="490" y2="183" stroke="#fb923c" stroke-width="1.5" marker-end="url(#arrow-orange)"/>
-
-        <!-- ================================================================= -->
-        <!-- PHASE B: Worker Pool + Redis Cache                              -->
-        <!-- ================================================================= -->
-
-        <!-- Worker Pool Region -->
-        <rect x="220" y="270" width="660" height="290" rx="10" fill="rgba(6, 78, 59, 0.04)" stroke="#34d399" stroke-width="1" stroke-dasharray="8,4"/>
-        <text x="235" y="288" fill="#34d399" font-size="9" font-weight="600">Hermes Agent Worker Pool (Phase B)</text>
-
-        <!-- Worker containers -->
-        <rect x="260" y="300" width="100" height="45" rx="6" fill="rgba(6, 78, 59, 0.3)" stroke="#34d399" stroke-width="1.5"/>
-        <text x="310" y="319" fill="white" font-size="10" font-weight="600" text-anchor="middle">Worker #1</text>
-        <text x="310" y="335" fill="#94a3b8" font-size="8" text-anchor="middle">Hermes Agent</text>
-
-        <rect x="390" y="300" width="100" height="45" rx="6" fill="rgba(6, 78, 59, 0.3)" stroke="#34d399" stroke-width="1.5"/>
-        <text x="440" y="319" fill="white" font-size="10" font-weight="600" text-anchor="middle">Worker #2</text>
-        <text x="440" y="335" fill="#94a3b8" font-size="8" text-anchor="middle">Hermes Agent</text>
-
-        <rect x="520" y="300" width="100" height="45" rx="6" fill="rgba(6, 78, 59, 0.3)" stroke="#34d399" stroke-width="1.5"/>
-        <text x="570" y="319" fill="white" font-size="10" font-weight="600" text-anchor="middle">Worker #N</text>
-        <text x="570" y="335" fill="#94a3b8" font-size="8" text-anchor="middle">Hermes Agent</text>
-
-        <!-- RabbitMQ → Workers arrows -->
-        <line x1="460" y1="240" x2="310" y2="298" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-emerald)"/>
-        <line x1="490" y1="240" x2="440" y2="298" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-emerald)"/>
-        <line x1="520" y1="240" x2="570" y2="298" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-emerald)"/>
-
-        <!-- Redis Cache -->
-        <rect x="260" y="375" width="260" height="55" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
-        <text x="390" y="398" fill="white" font-size="11" font-weight="600" text-anchor="middle">Local Redis Cache</text>
-        <text x="390" y="413" fill="#94a3b8" font-size="8" text-anchor="middle">Pattern Store • Request→Plan Map</text>
-        <text x="390" y="425" fill="#a78bfa" font-size="7" text-anchor="middle">Key: sha256(segment+sla+product+chars)</text>
-
-        <!-- Cache Check arrow -->
-        <line x1="390" y1="345" x2="390" y2="373" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#arrow-cyan)"/>
-
-        <!-- Branch Decision Diamond -->
-        <polygon points="430,470 490,500 430,530 370,500" fill="rgba(251, 146, 60, 0.3)" stroke="#fb923c" stroke-width="1.5"/>
-        <text x="430" y="497" fill="white" font-size="9" font-weight="600" text-anchor="middle">HIT?</text>
-        <text x="430" y="510" fill="#94a3b8" font-size="7" text-anchor="middle">Cache</text>
-
-        <!-- Redis → Branch arrow -->
-        <line x1="390" y1="430" x2="415" y2="468" stroke="#fb923c" stroke-width="1.5" marker-end="url(#arrow-orange)"/>
-
-        <!-- ================================================================= -->
-        <!-- TRACK A: Fast Path (Cache Hit)                                   -->
-        <!-- ================================================================= -->
-
-        <rect x="160" y="510" width="170" height="52" rx="6" fill="rgba(34, 211, 238, 0.12)" stroke="#22d3ee" stroke-width="1.5" stroke-dasharray="4,2"/>
-        <text x="245" y="530" fill="#22d3ee" font-size="9" font-weight="600" text-anchor="middle">TRACK A — Fast Path</text>
-        <text x="245" y="544" fill="#94a3b8" font-size="7" text-anchor="middle">Cache Hit → 5ms</text>
-        <text x="245" y="556" fill="#94a3b8" font-size="7" text-anchor="middle">Hydrate template locally</text>
-
-        <!-- Diamond left (HIT) to Track A -->
-        <line x1="370" y1="500" x2="332" y2="536" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#arrow-cyan)"/>
-        <text x="350" y="510" fill="#22d3ee" font-size="8" text-anchor="middle">YES</text>
-
-        <!-- ================================================================= -->
-        <!-- TRACK B: Fallback Path (Cache Miss)                              -->
-        <!-- ================================================================= -->
-
-        <rect x="490" y="510" width="290" height="310" rx="6" fill="rgba(248, 113, 113, 0.05)" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="4,2"/>
-        <text x="635" y="528" fill="#fb7185" font-size="9" font-weight="600" text-anchor="middle">TRACK B — Fallback Path</text>
-        <text x="635" y="542" fill="#94a3b8" font-size="7" text-anchor="middle">Cache Miss → Cloud AI</text>
-
-        <!-- Diamond right (MISS) to Track B -->
-        <line x1="490" y1="500" x2="530" y2="518" stroke="#fb7185" stroke-width="1.5" marker-end="url(#arrow-rose)"/>
-        <text x="515" y="505" fill="#fb7185" font-size="8" text-anchor="middle">NO</text>
-
-        <!-- Data Masker -->
-        <rect x="510" y="555" width="140" height="45" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
-        <text x="580" y="573" fill="white" font-size="10" font-weight="600" text-anchor="middle">Data Masker</text>
-        <text x="580" y="589" fill="#94a3b8" font-size="7" text-anchor="middle">IP→VAR_IP_1, chassis→VAR_CH_1</text>
-
-        <line x1="580" y1="555" x2="580" y2="555" stroke="#fb7185" stroke-width="1" />
-        <!-- Actually draw arrow from track header to masker -->
-        <line x1="580" y1="533" x2="580" y2="553" stroke="#fb7185" stroke-width="1.5" marker-end="url(#arrow-rose)"/>
-
-        <!-- Hermes Core RAG -->
-        <rect x="510" y="615" width="140" height="45" rx="6" fill="rgba(251, 191, 36, 0.15)" stroke="#fbbf24" stroke-width="1.5"/>
-        <text x="580" y="633" fill="white" font-size="10" font-weight="600" text-anchor="middle">Hermes Core RAG</text>
-        <text x="580" y="649" fill="#94a3b8" font-size="7" text-anchor="middle">Local KB doc lookup</text>
-
-        <line x1="580" y1="600" x2="580" y2="613" stroke="#fbbf24" stroke-width="1.5" marker-end="url(#arrow-amber)"/>
-
-        <!-- Deepseek -->
-        <rect x="510" y="675" width="140" height="45" rx="6" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
-        <text x="580" y="693" fill="white" font-size="10" font-weight="600" text-anchor="middle">Deepseek</text>
-        <text x="580" y="709" fill="#94a3b8" font-size="7" text-anchor="middle">Abstract blueprint gen</text>
-
-        <line x1="580" y1="660" x2="580" y2="673" stroke="#fbbf24" stroke-width="1.5" marker-end="url(#arrow-amber)"/>
-
-        <!-- Memory Write-Through -->
-        <rect x="510" y="735" width="140" height="45" rx="6" fill="rgba(76, 29, 149, 0.3)" stroke="#a78bfa" stroke-width="1.5"/>
-        <text x="580" y="753" fill="white" font-size="10" font-weight="600" text-anchor="middle">Write-Through</text>
-        <text x="580" y="769" fill="#94a3b8" font-size="7" text-anchor="middle">Persist to Redis</text>
-
-        <line x1="580" y1="720" x2="580" y2="733" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#arrow-cyan)"/>
-
-        <!-- Dashed return arrow from Write-Through back to Redis -->
-        <path d="M 650 757 L 700 757 L 700 402 L 522 402" fill="none" stroke="#a78bfa" stroke-width="1.5" stroke-dasharray="5,3"/>
-        <text x="700" y="580" fill="#a78bfa" font-size="7" text-anchor="middle" transform="rotate(90, 700, 580)">future hits → 5ms</text>
-
-        <!-- ================================================================= -->
-        <!-- PHASE D: Validation Gateway (Convergence point)                  -->
-        <!-- ================================================================= -->
-
-        <!-- Validation Gateway -->
-        <rect x="220" y="610" width="240" height="120" rx="8" fill="rgba(136, 19, 55, 0.3)" stroke="#fb7185" stroke-width="2"/>
-        <text x="340" y="632" fill="white" font-size="12" font-weight="700" text-anchor="middle">VALIDATION GATEWAY</text>
-        <text x="340" y="648" fill="#94a3b8" font-size="8" text-anchor="middle">Pydantic v2 Schema</text>
-        <text x="340" y="664" fill="#94a3b8" font-size="8" text-anchor="middle">Destructive Keyword Filter</text>
-        <text x="340" y="680" fill="#94a3b8" font-size="8" text-anchor="middle">Range Constraints (VLAN 1-4094)</text>
-        <text x="340" y="696" fill="#94a3b8" font-size="8" text-anchor="middle">Regex Sanitization</text>
-        <text x="340" y="718" fill="#fb7185" font-size="7" text-anchor="middle">Fail: DROP + Alert • Pass: Forward</text>
-
-        <!-- Track A → Validator -->
-        <line x1="245" y1="562" x2="310" y2="608" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#arrow-cyan)"/>
-
-        <!-- Track B → Validator (hydrated) -->
-        <path d="M 580 780 L 580 800 L 340 800 L 340 732" fill="none" stroke="#fb7185" stroke-width="1.5" marker-end="url(#arrow-rose)"/>
-        <text x="460" y="795" fill="#fb7185" font-size="7" text-anchor="middle">Local Hydrator: restore real params</text>
-
-        <!-- ================================================================= -->
-        <!-- PHASE D: MCP + Device Execution                                  -->
-        <!-- ================================================================= -->
-
-        <!-- MCP Region -->
-        <rect x="220" y="760" width="240" height="100" rx="10" fill="rgba(251, 191, 36, 0.05)" stroke="#fbbf24" stroke-width="1" stroke-dasharray="8,4"/>
-        <text x="235" y="778" fill="#fbbf24" font-size="9" font-weight="600">MCP Integration Layer</text>
-
-        <!-- MCP Servers inline -->
-        <rect x="232" y="790" width="75" height="28" rx="4" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1"/>
-        <text x="269" y="808" fill="white" font-size="7" font-weight="600" text-anchor="middle">NetBox</text>
-
-        <rect x="315" y="790" width="75" height="28" rx="4" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1"/>
-        <text x="352" y="808" fill="white" font-size="7" font-weight="600" text-anchor="middle">Ansible</text>
-
-        <rect x="398" y="790" width="52" height="28" rx="4" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1"/>
-        <text x="424" y="808" fill="white" font-size="7" font-weight="600" text-anchor="middle">NSO</text>
-
-        <rect x="232" y="824" width="90" height="28" rx="4" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1"/>
-        <text x="277" y="842" fill="white" font-size="7" font-weight="600" text-anchor="middle">Device CLI</text>
-
-        <rect x="330" y="824" width="75" height="28" rx="4" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1"/>
-        <text x="367" y="842" fill="white" font-size="7" font-weight="600" text-anchor="middle">OSM/ONAP</text>
-
-        <!-- Validator → MCP -->
-        <line x1="340" y1="732" x2="340" y2="758" stroke="#fbbf24" stroke-width="1.5" marker-end="url(#arrow-amber)"/>
-
-        <!-- ================================================================= -->
-        <!-- Network Devices (Southbound)                                     -->
-        <!-- ================================================================= -->
-
-        <rect x="220" y="895" width="240" height="42" rx="6" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1.5"/>
-        <text x="340" y="913" fill="white" font-size="10" font-weight="600" text-anchor="middle">Routers • Switches • Firewalls</text>
-        <text x="340" y="929" fill="#94a3b8" font-size="7" text-anchor="middle">SSH CLI • NETCONF • SOAP XML</text>
-
-        <!-- MCP → Devices -->
-        <line x1="340" y1="860" x2="340" y2="893" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-
-        <!-- ================================================================= -->
-        <!-- Queue Ack loop (Phase D)                                          -->
-        <!-- ================================================================= -->
-
-        <path d="M 460 895 L 490 895 L 490 245" fill="none" stroke="#fb923c" stroke-width="1" stroke-dasharray="4,4"/>
-        <text x="506" y="570" fill="#fb923c" font-size="7">ack → dequeue</text>
-
-        <!-- ================================================================= -->
-        <!-- Data Sovereignty Boundary                                        -->
-        <!-- ================================================================= -->
-
-        <rect x="10" y="15" width="790" height="942" rx="14" fill="transparent" stroke="#34d399" stroke-width="1.5" stroke-dasharray="6,4"/>
-        <text x="25" y="33" fill="#34d399" font-size="9" font-weight="700">LOCAL DATA SOVEREIGNTY PERIMETER</text>
-        <text x="25" y="948" fill="#34d399" font-size="7">Sensitive data never leaves this boundary</text>
-
-        <!-- Deepseek Cloud boundary -->
-        <rect x="498" y="605" width="310" height="185" rx="10" fill="transparent" stroke="#fbbf24" stroke-width="1" stroke-dasharray="5,5"/>
-        <text x="512" y="620" fill="#fbbf24" font-size="8" font-weight="600">CLOUD (Deepseek)</text>
-        <text x="512" y="635" fill="#fbbf24" font-size="7">Receives ONLY masked tokens</text>
-
-        <!-- ================================================================= -->
-        <!-- Orchestration Brain Annotation (across workers)                   -->
-        <!-- ================================================================= -->
-
-        <rect x="710" y="290" width="180" height="230" rx="8" fill="rgba(8, 51, 68, 0.3)" stroke="#22d3ee" stroke-width="1.5" stroke-dasharray="5,3"/>
-        <text x="800" y="310" fill="#22d3ee" font-size="9" font-weight="600" text-anchor="middle">Orch Brain Pipeline</text>
-        <line x1="720" y1="318" x2="880" y2="318" stroke="#22d3ee" stroke-width="0.5"/>
-        <text x="800" y="336" fill="#94a3b8" font-size="7" text-anchor="middle">1. PARSE TMF640+TMF641</text>
-        <text x="800" y="355" fill="#94a3b8" font-size="7" text-anchor="middle">2. MATCH pattern store</text>
-        <text x="800" y="374" fill="#94a3b8" font-size="7" text-anchor="middle">3. REASON expected state</text>
-        <text x="800" y="393" fill="#94a3b8" font-size="7" text-anchor="middle">4. PLAN workflows</text>
-        <text x="800" y="412" fill="#94a3b8" font-size="7" text-anchor="middle">5. DELEGATE to MCP</text>
-        <text x="800" y="431" fill="#94a3b8" font-size="7" text-anchor="middle">6. VERIFY &amp; LEARN</text>
-        <text x="800" y="456" fill="#22d3ee" font-size="7" text-anchor="middle">Each Hermes Agent runs</text>
-        <text x="800" y="472" fill="#22d3ee" font-size="7" text-anchor="middle">this 6-stage pipeline</text>
-        <text x="800" y="492" fill="#22d3ee" font-size="7" text-anchor="middle">per ServiceOrder</text>
-
-        <!-- ================================================================= -->
-        <!-- LEGEND                                                           -->
-        <!-- ================================================================= -->
-
-        <rect x="930" y="20" width="250" height="235" rx="8" fill="rgba(15, 23, 42, 0.7)" stroke="#1e293b" stroke-width="1"/>
-        <text x="1055" y="40" fill="white" font-size="10" font-weight="600" text-anchor="middle">Legend</text>
-
-        <rect x="942" y="52" width="14" height="9" rx="2" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1"/>
-        <text x="964" y="60" fill="#94a3b8" font-size="7">External / CRM</text>
-
-        <rect x="942" y="68" width="14" height="9" rx="2" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1"/>
-        <text x="964" y="76" fill="#94a3b8" font-size="7">Security / Gateway</text>
-
-        <rect x="942" y="84" width="14" height="9" rx="2" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1"/>
-        <text x="964" y="92" fill="#94a3b8" font-size="7">Backend / Worker</text>
-
-        <rect x="942" y="100" width="14" height="9" rx="2" fill="rgba(251, 146, 60, 0.3)" stroke="#fb923c" stroke-width="1"/>
-        <text x="964" y="108" fill="#94a3b8" font-size="7">Message Bus</text>
-
-        <rect x="942" y="116" width="14" height="9" rx="2" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1"/>
-        <text x="964" y="124" fill="#94a3b8" font-size="7">Cache / Database</text>
-
-        <rect x="942" y="132" width="14" height="9" rx="2" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1"/>
-        <text x="964" y="140" fill="#94a3b8" font-size="7">Cloud / MCP</text>
-
-        <rect x="942" y="148" width="14" height="9" rx="2" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1"/>
-        <text x="964" y="156" fill="#94a3b8" font-size="7">Brain / Reasoning</text>
-
-        <line x1="942" y1="172" x2="956" y2="172" stroke="#34d399" stroke-width="1" stroke-dasharray="6,4"/>
-        <text x="964" y="175" fill="#94a3b8" font-size="7">Sovereignty Boundary</text>
-
-        <line x1="942" y1="190" x2="956" y2="190" stroke="#22d3ee" stroke-width="1" stroke-dasharray="4,2"/>
-        <text x="964" y="193" fill="#94a3b8" font-size="7">Fast Path (Track A)</text>
-
-        <line x1="942" y1="208" x2="956" y2="208" stroke="#fb7185" stroke-width="1" stroke-dasharray="4,2"/>
-        <text x="964" y="211" fill="#94a3b8" font-size="7">Fallback (Track B)</text>
-
-        <line x1="942" y1="226" x2="956" y2="226" stroke="#fb923c" stroke-width="1" stroke-dasharray="4,4"/>
-        <text x="964" y="229" fill="#94a3b8" font-size="7">Queue Ack</text>
-      </svg>
-    </div>
-
-    <!-- Info Cards -->
-    <div class="cards">
-      <div class="card">
-        <div class="card-header"><div class="card-dot cyan"></div><h3>Throughput Target</h3></div>
-        <ul>
-          <li>• 5 TPS sustained transaction rate</li>
-          <li>• Cache Hit: &lt; 5ms (local Redis)</li>
-          <li>• Cache Miss: &lt; 42s (Deepseek RAG)</li>
-          <li>• Parallel Workers: N workers, prefetch=1</li>
-          <li>• Redis Memory: In-memory KV store</li>
-        </ul>
-      </div>
-
-      <div class="card">
-        <div class="card-header"><div class="card-dot rose"></div><h3>Security Guardrails</h3></div>
-        <ul>
-          <li>• Data Masker: tokenize IPs/hostnames before cloud</li>
-          <li>• Pydantic v2: schema-bound validation</li>
-          <li>• Keyword Filter: block erase/reload/format/shutdown</li>
-          <li>• Range Constraints: VLAN 1-4094, MTU 68-9216</li>
-          <li>• LLM never sees real infrastructure data</li>
-        </ul>
-      </div>
-
-      <div class="card">
-        <div class="card-header"><div class="card-dot amber"></div><h3>Standards Alignment</h3></div>
-        <ul>
-          <li>• Northbound: TMF640 Activation, TMF641 ServiceOrder</li>
-          <li>• Ingress: Structured JSON + unstructured text</li>
-          <li>• Inventory: TMF638 Service, TMF639 Resource</li>
-          <li>• Domain Model: TM Forum SID / eTOM</li>
-          <li>• Southbound: NETCONF/YANG, Ansible, SSH CLI</li>
-          <li>• NFV: ETSI NFV MANO SOL-001/006</li>
-        </ul>
-      </div>
-    </div>
-
-    <p class="footer">
-      Telecom Service-Resource Orchestrator • <a href="https://hermes-agent.nousresearch.com">Hermes Agent</a> • Deepseek v4 • Version 1.0
-    </p>
+<div class="container">
+  <div class="header">
+    <div class="header-row"><div class="pulse-dot"></div><h1>Telecom Orchestration Engine — Technical Architecture</h1></div>
+    <p class="subtitle">Cache-First • Data-Sovereign • TMF-Standards Compliant • Dual Implementation (Python + Java)</p>
   </div>
+
+  <div class="diagram-container">
+<svg viewBox="0 0 1080 640">
+<defs>
+  <marker id="a" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/></marker>
+  <marker id="ac" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#22d3ee"/></marker>
+  <marker id="ag" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#34d399"/></marker>
+  <marker id="aa" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#fbbf24"/></marker>
+  <marker id="ar" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#fb7185"/></marker>
+  <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5"/></pattern>
+</defs>
+<rect width="100%" height="100%" fill="url(#grid)"/>
+
+<!-- ============================================================ -->
+<!-- LEFT COLUMN: ACTORS (external systems, users, cloud)         -->
+<!-- ============================================================ -->
+<rect x="12" y="12" width="302" height="618" rx="10" fill="transparent" stroke="#475569" stroke-width="1" stroke-dasharray="6,3"/>
+<text x="22" y="30" fill="#64748b" font-size="10" font-weight="600">ACTORS — External</text>
+
+<!-- CRM -->
+<rect x="30" y="50" width="266" height="70" rx="6" fill="rgba(30,41,59,0.5)" stroke="#64748b" stroke-width="1.5"/>
+<text x="163" y="72" fill="#e2e8f0" font-size="12" font-weight="600" text-anchor="middle">CRM / BSS Systems</text>
+<text x="163" y="90" fill="#94a3b8" font-size="9" text-anchor="middle">Salesforce, Dynamics 365, Custom ERP</text>
+<text x="163" y="106" fill="#64748b" font-size="8" text-anchor="middle">TMF622 Product Orders → TMF641 Service Orders</text>
+
+<!-- API Clients -->
+<rect x="30" y="135" width="266" height="60" rx="6" fill="rgba(30,41,59,0.5)" stroke="#64748b" stroke-width="1.5"/>
+<text x="163" y="157" fill="#e2e8f0" font-size="12" font-weight="600" text-anchor="middle">API Clients & NOC Operators</text>
+<text x="163" y="174" fill="#94a3b8" font-size="9" text-anchor="middle">TMF640/641 JSON · Unstructured text</text>
+<text x="163" y="189" fill="#64748b" font-size="8" text-anchor="middle">REST · CLI · automated provisioning scripts</text>
+
+<!-- Web Dashboard -->
+<rect x="30" y="210" width="266" height="55" rx="6" fill="rgba(8,51,68,0.35)" stroke="#22d3ee" stroke-width="1.5"/>
+<text x="163" y="232" fill="#e2e8f0" font-size="12" font-weight="600" text-anchor="middle">Web Dashboard</text>
+<text x="163" y="249" fill="#94a3b8" font-size="9" text-anchor="middle">Pipeline Trace Viewer · Pattern Analysis</text>
+<text x="163" y="262" fill="#22d3ee" font-size="8" text-anchor="middle">Single-file HTML · JetBrains Mono · 6 color themes</text>
+
+<!-- Cloud AI -->
+<rect x="30" y="280" width="266" height="65" rx="6" fill="rgba(120,53,15,0.20)" stroke="#fbbf24" stroke-width="1.5"/>
+<text x="163" y="302" fill="#e2e8f0" font-size="12" font-weight="600" text-anchor="middle">Deepseek v4 Pro (Cloud AI)</text>
+<text x="163" y="319" fill="#94a3b8" font-size="9" text-anchor="middle">LLM reasoning on MASKED data only</text>
+<text x="163" y="336" fill="#fbbf24" font-size="8" text-anchor="middle">Plan generation · JSON structured output</text>
+
+<!-- Downstream -->
+<rect x="30" y="375" width="266" height="70" rx="6" fill="rgba(30,41,59,0.5)" stroke="#64748b" stroke-width="1.5"/>
+<text x="163" y="397" fill="#e2e8f0" font-size="12" font-weight="600" text-anchor="middle">Network Infrastructure</text>
+<text x="163" y="414" fill="#94a3b8" font-size="9" text-anchor="middle">PE Routers · HLR/HSS · OLT · BNG</text>
+<text x="163" y="430" fill="#64748b" font-size="8" text-anchor="middle">vCPE · SBC · ROADM · Transponders</text>
+
+<!-- Security perimeter annotation -->
+<line x1="314" y1="12" x2="314" y2="630" stroke="#fb7185" stroke-width="2" stroke-dasharray="8,4"/>
+<text x="322" y="325" fill="#fb7185" font-size="8" font-weight="600" transform="rotate(90,322,325)">DATA SOVEREIGNTY PERIMETER</text>
+
+<!-- ============================================================ -->
+<!-- RIGHT COLUMN: SYSTEM — Orchestration Engine Internals         -->
+<!-- ============================================================ -->
+
+<!-- ---- Row 1: API Gateway + Ingestion ---- -->
+<rect x="340" y="20" width="722" height="46" rx="6" fill="transparent" stroke="#22c55e" stroke-width="1"/>
+<text x="355" y="36" fill="#22c55e" font-size="9" font-weight="600">INGESTION — API Gateway</text>
+
+<rect x="350" y="27" width="190" height="34" rx="5" fill="rgba(6,78,59,0.35)" stroke="#22c55e" stroke-width="1.3"/>
+<text x="445" y="42" fill="#e2e8f0" font-size="10" font-weight="600" text-anchor="middle">Nginx :443</text>
+<text x="445" y="55" fill="#4ade80" font-size="7" text-anchor="middle">TLS · Auth · Rate Limit · CORS</text>
+
+<rect x="560" y="27" width="230" height="34" rx="5" fill="rgba(8,51,68,0.4)" stroke="#22d3ee" stroke-width="1.3"/>
+<text x="675" y="42" fill="#e2e8f0" font-size="10" font-weight="600" text-anchor="middle">FastAPI / Spring Boot Gateway</text>
+<text x="675" y="55" fill="#67e8f9" font-size="7" text-anchor="middle">TMF622·641·640·638·639 · Order Decomposer</text>
+
+<!-- ---- Row 2: Queue + Workers ---- -->
+<rect x="340" y="78" width="722" height="46" rx="6" fill="transparent" stroke="#fb923c" stroke-width="1"/>
+<text x="355" y="94" fill="#fb923c" font-size="9" font-weight="600">DISPATCH — Message Queue & Worker Pool</text>
+
+<rect x="350" y="85" width="180" height="34" rx="5" fill="rgba(251,146,60,0.22)" stroke="#fb923c" stroke-width="1.3"/>
+<text x="440" y="100" fill="#e2e8f0" font-size="10" font-weight="600" text-anchor="middle">RabbitMQ / ThreadPool</text>
+<text x="440" y="113" fill="#fdba74" font-size="7" text-anchor="middle">prefetch=1 · fair dispatch · dead-letter</text>
+
+<rect x="550" y="85" width="220" height="34" rx="5" fill="rgba(6,78,59,0.35)" stroke="#34d399" stroke-width="1.3"/>
+<text x="660" y="100" fill="#e2e8f0" font-size="10" font-weight="600" text-anchor="middle">Worker Pool (Hermes Agents)</text>
+<text x="660" y="113" fill="#4ade80" font-size="7" text-anchor="middle">Skills loaded · KB · MCP · 12-stage pipeline</text>
+
+<!-- ---- Row 3: Pipeline Stages ---- -->
+<rect x="340" y="136" width="722" height="72" rx="6" fill="transparent" stroke="#34d399" stroke-width="1"/>
+<text x="355" y="152" fill="#34d399" font-size="9" font-weight="600">PIPELINE — 12-Stage Orchestration Brain</text>
+
+<rect x="355" y="160" width="70" height="32" rx="4" fill="rgba(6,78,59,0.25)" stroke="#34d399" stroke-width="1"/>
+<text x="390" y="180" fill="#e2e8f0" font-size="9" font-weight="600" text-anchor="middle">DETECT</text>
+
+<rect x="435" y="160" width="70" height="32" rx="4" fill="rgba(136,19,55,0.25)" stroke="#fb7185" stroke-width="1"/>
+<text x="470" y="180" fill="#e2e8f0" font-size="9" font-weight="600" text-anchor="middle">MASK</text>
+
+<rect x="515" y="160" width="70" height="32" rx="4" fill="rgba(76,29,149,0.22)" stroke="#a78bfa" stroke-width="1"/>
+<text x="550" y="180" fill="#e2e8f0" font-size="9" font-weight="600" text-anchor="middle">CACHE</text>
+
+<rect x="595" y="160" width="70" height="32" rx="4" fill="rgba(6,78,59,0.25)" stroke="#34d399" stroke-width="1"/>
+<text x="630" y="180" fill="#e2e8f0" font-size="9" font-weight="600" text-anchor="middle">HYDRATE</text>
+
+<rect x="675" y="160" width="70" height="32" rx="4" fill="rgba(6,78,59,0.25)" stroke="#34d399" stroke-width="1"/>
+<text x="710" y="180" fill="#e2e8f0" font-size="9" font-weight="600" text-anchor="middle">MERGE</text>
+
+<rect x="755" y="160" width="70" height="32" rx="4" fill="rgba(136,19,55,0.25)" stroke="#fb7185" stroke-width="1"/>
+<text x="790" y="180" fill="#e2e8f0" font-size="9" font-weight="600" text-anchor="middle">VALIDATE</text>
+
+<rect x="835" y="160" width="70" height="32" rx="4" fill="rgba(6,78,59,0.25)" stroke="#34d399" stroke-width="1"/>
+<text x="870" y="180" fill="#e2e8f0" font-size="9" font-weight="600" text-anchor="middle">EXECUTE</text>
+
+<rect x="915" y="160" width="70" height="32" rx="4" fill="rgba(6,78,59,0.25)" stroke="#34d399" stroke-width="1"/>
+<text x="950" y="180" fill="#e2e8f0" font-size="9" font-weight="600" text-anchor="middle">VERIFY</text>
+
+<!-- Arrow connectors between stages -->
+<line x1="425" y1="176" x2="433" y2="176" stroke="#34d399" stroke-width="1.2" marker-end="url(#ag)"/>
+<line x1="505" y1="176" x2="513" y2="176" stroke="#34d399" stroke-width="1.2" marker-end="url(#ag)"/>
+<line x1="585" y1="176" x2="593" y2="176" stroke="#34d399" stroke-width="1.2" marker-end="url(#ag)"/>
+<line x1="665" y1="176" x2="673" y2="176" stroke="#34d399" stroke-width="1.2" marker-end="url(#ag)"/>
+<line x1="745" y1="176" x2="753" y2="176" stroke="#34d399" stroke-width="1.2" marker-end="url(#ag)"/>
+<line x1="825" y1="176" x2="833" y2="176" stroke="#34d399" stroke-width="1.2" marker-end="url(#ag)"/>
+<line x1="905" y1="176" x2="913" y2="176" stroke="#34d399" stroke-width="1.2" marker-end="url(#ag)"/>
+
+<!-- RAG + LLM row (cache-miss path) -->
+<rect x="515" y="200" width="70" height="28" rx="4" fill="rgba(120,53,15,0.18)" stroke="#fbbf24" stroke-width="1"/>
+<text x="550" y="218" fill="#fbbf24" font-size="8" font-weight="600" text-anchor="middle">RAG</text>
+<rect x="595" y="200" width="70" height="28" rx="4" fill="rgba(120,53,15,0.18)" stroke="#fbbf24" stroke-width="1"/>
+<text x="630" y="218" fill="#fbbf24" font-size="8" font-weight="600" text-anchor="middle">LLM</text>
+<line x1="585" y1="190" x2="515" y2="210" stroke="#fbbf24" stroke-width="1" stroke-dasharray="3,3"/>
+<text x="548" y="206" fill="#fbbf24" font-size="6">MISS</text>
+<line x1="585" y1="210" x2="593" y2="210" stroke="#fbbf24" stroke-width="1" marker-end="url(#aa)"/>
+
+<!-- ---- Row 4: Security + Cross-Cutting ---- -->
+<rect x="340" y="240" width="722" height="50" rx="6" fill="transparent" stroke="#fb7185" stroke-width="1"/>
+<text x="355" y="256" fill="#fb7185" font-size="9" font-weight="600">SECURITY — Validation Gateway & Data Sovereignty</text>
+
+<rect x="355" y="262" width="200" height="24" rx="4" fill="rgba(136,19,55,0.22)" stroke="#fb7185" stroke-width="1"/>
+<text x="455" y="278" fill="#e2e8f0" font-size="9" font-weight="600" text-anchor="middle">Blocked Keyword Scanning</text>
+
+<rect x="570" y="262" width="200" height="24" rx="4" fill="rgba(136,19,55,0.22)" stroke="#fb7185" stroke-width="1"/>
+<text x="670" y="278" fill="#e2e8f0" font-size="9" font-weight="600" text-anchor="middle">DataMasker (MSISDN/IP→VAR_*)</text>
+
+<rect x="785" y="262" width="140" height="24" rx="4" fill="rgba(136,19,55,0.22)" stroke="#fb7185" stroke-width="1"/>
+<text x="855" y="278" fill="#e2e8f0" font-size="9" font-weight="600" text-anchor="middle">SubscriberLock (30s TTL)</text>
+
+<!-- ---- Row 5: Stores ---- -->
+<rect x="340" y="370" width="722" height="70" rx="6" fill="transparent" stroke="#a78bfa" stroke-width="1"/>
+<text x="355" y="386" fill="#a78bfa" font-size="9" font-weight="600">PERSISTENCE — Data Stores & Knowledge</text>
+
+<rect x="355" y="393" width="160" height="40" rx="5" fill="rgba(76,29,149,0.22)" stroke="#a78bfa" stroke-width="1.2"/>
+<text x="435" y="408" fill="#e2e8f0" font-size="10" font-weight="600" text-anchor="middle">PostgreSQL / H2</text>
+<text x="435" y="424" fill="#c4b5fd" font-size="7" text-anchor="middle">catalog · inventory · audit · models</text>
+
+<rect x="530" y="393" width="160" height="40" rx="5" fill="rgba(76,29,149,0.22)" stroke="#a78bfa" stroke-width="1.2"/>
+<text x="610" y="408" fill="#e2e8f0" font-size="10" font-weight="600" text-anchor="middle">Redis / diskcache</text>
+<text x="610" y="424" fill="#c4b5fd" font-size="7" text-anchor="middle">task queues · sessions · locks · hot cache</text>
+
+<rect x="705" y="393" width="170" height="40" rx="5" fill="rgba(76,29,149,0.22)" stroke="#a78bfa" stroke-width="1.2"/>
+<text x="790" y="408" fill="#e2e8f0" font-size="10" font-weight="600" text-anchor="middle">Pattern Engine</text>
+<text x="790" y="424" fill="#c4b5fd" font-size="7" text-anchor="middle">RDF triples · Jaccard · 0.25→0.98</text>
+
+<!-- ---- Row 6: MCP + Outputs ---- -->
+<rect x="340" y="455" width="722" height="65" rx="6" fill="transparent" stroke="#fbbf24" stroke-width="1"/>
+<text x="355" y="471" fill="#fbbf24" font-size="9" font-weight="600">SOUTHBOUND — MCP Servers & Execution</text>
+
+<rect x="355" y="478" width="130" height="35" rx="4" fill="rgba(120,53,15,0.18)" stroke="#fbbf24" stroke-width="1"/>
+<text x="420" y="499" fill="#e2e8f0" font-size="9" font-weight="600" text-anchor="middle">NetBox (IPAM/DCIM)</text>
+
+<rect x="498" y="478" width="130" height="35" rx="4" fill="rgba(120,53,15,0.18)" stroke="#fbbf24" stroke-width="1"/>
+<text x="563" y="499" fill="#e2e8f0" font-size="9" font-weight="600" text-anchor="middle">Ansible (Config)</text>
+
+<rect x="641" y="478" width="130" height="35" rx="4" fill="rgba(120,53,15,0.18)" stroke="#fbbf24" stroke-width="1"/>
+<text x="706" y="499" fill="#e2e8f0" font-size="9" font-weight="600" text-anchor="middle">Cisco NSO (Svc Act)</text>
+
+<rect x="784" y="478" width="130" height="35" rx="4" fill="rgba(120,53,15,0.18)" stroke="#fbbf24" stroke-width="1"/>
+<text x="849" y="499" fill="#e2e8f0" font-size="9" font-weight="600" text-anchor="middle">Device (CLI/NETCONF)</text>
+
+<!-- ---- Row 7: Notifications ---- -->
+<rect x="340" y="535" width="722" height="46" rx="6" fill="transparent" stroke="#06b6d4" stroke-width="1"/>
+<text x="355" y="551" fill="#06b6d4" font-size="9" font-weight="600">OUTPUTS — Notifications & Callbacks</text>
+
+<rect x="355" y="555" width="230" height="22" rx="4" fill="rgba(30,41,59,0.5)" stroke="#64748b" stroke-width="1"/>
+<text x="470" y="570" fill="#e2e8f0" font-size="9" font-weight="600" text-anchor="middle">TMF641 Milestone + StateChange Events</text>
+
+<rect x="600" y="555" width="230" height="22" rx="4" fill="rgba(30,41,59,0.5)" stroke="#64748b" stroke-width="1"/>
+<text x="715" y="570" fill="#e2e8f0" font-size="9" font-weight="600" text-anchor="middle">CRM Webhooks · Telegram · Discord · Slack</text>
+
+<!-- ============================================================ -->
+<!-- CROSS-BOUNDARY ARROWS (drawn behind boxes)                   -->
+<!-- ============================================================ -->
+
+<!-- CRM → Nginx -->
+<line x1="163" y1="120" x2="163" y2="300" stroke="#64748b" stroke-width="1.3" stroke-dasharray="4,3"/>
+<line x1="163" y1="300" x2="348" y2="300" stroke="#64748b" stroke-width="1.3" marker-end="url(#a)"/>
+
+<!-- API → Nginx -->
+<line x1="163" y1="195" x2="163" y2="310" stroke="#64748b" stroke-width="1.3" stroke-dasharray="4,3"/>
+<line x1="163" y1="310" x2="348" y2="310" stroke="#64748b" stroke-width="1.3" marker-end="url(#a)"/>
+
+<!-- Web → Gateway -->
+<line x1="163" y1="265" x2="163" y2="320" stroke="#22d3ee" stroke-width="1.3" stroke-dasharray="4,3"/>
+<line x1="163" y1="320" x2="348" y2="320" stroke="#22d3ee" stroke-width="1.3" marker-end="url(#ac)"/>
+
+<!-- Deepseek ↔ Pipeline (masked path) -->
+<line x1="163" y1="345" x2="163" y2="350" stroke="#fbbf24" stroke-width="1.3" stroke-dasharray="4,3"/>
+<line x1="163" y1="350" x2="348" y2="350" stroke="#fbbf24" stroke-width="1.3" marker-end="url(#aa)"/>
+
+<!-- Execute → Devices -->
+<line x1="849" y1="513" x2="850" y2="525" stroke="#fbbf24" stroke-width="1.3"/>
+<line x1="850" y1="525" x2="296" y2="525" stroke="#fbbf24" stroke-width="1.3" stroke-dasharray="4,3"/>
+<line x1="296" y1="525" x2="296" y2="375" stroke="#fbbf24" stroke-width="1.3"/>
+<line x1="296" y1="375" x2="163" y2="375" stroke="#fbbf24" stroke-width="1.3" marker-end="url(#aa)"/>
+
+<!-- Notifications → CRM -->
+<line x1="470" y1="577" x2="470" y2="595" stroke="#06b6d4" stroke-width="1.3" stroke-dasharray="3,3"/>
+<line x1="470" y1="595" x2="163" y2="595" stroke="#06b6d4" stroke-width="1.3" stroke-dasharray="3,3"/>
+<line x1="163" y1="595" x2="163" y2="445" stroke="#06b6d4" stroke-width="1.3" marker-end="url(#a)"/>
+
+<!-- Legend -->
+<rect x="908" y="16" width="146" height="88" rx="5" fill="rgba(15,23,42,0.75)" stroke="#1e293b" stroke-width="1"/>
+<text x="981" y="32" fill="#e2e8f0" font-size="9" font-weight="600" text-anchor="middle">Legend</text>
+<rect x="918" y="40" width="12" height="7" rx="2" fill="rgba(6,78,59,0.35)" stroke="#34d399" stroke-width="0.8"/>
+<text x="936" y="47" fill="#94a3b8" font-size="7">Pipeline Process</text>
+<rect x="918" y="52" width="12" height="7" rx="2" fill="rgba(76,29,149,0.22)" stroke="#a78bfa" stroke-width="0.8"/>
+<text x="936" y="59" fill="#94a3b8" font-size="7">Data / Knowledge</text>
+<rect x="918" y="64" width="12" height="7" rx="2" fill="rgba(136,19,55,0.25)" stroke="#fb7185" stroke-width="0.8"/>
+<text x="936" y="71" fill="#94a3b8" font-size="7">Security Gate</text>
+<rect x="918" y="76" width="12" height="7" rx="2" fill="rgba(120,53,15,0.18)" stroke="#fbbf24" stroke-width="0.8"/>
+<text x="936" y="83" fill="#94a3b8" font-size="7">MCP / Cloud AI</text>
+<rect x="918" y="88" width="12" height="7" rx="2" fill="rgba(30,41,59,0.5)" stroke="#64748b" stroke-width="0.8"/>
+<text x="936" y="95" fill="#94a3b8" font-size="7">Actor / External</text>
+
+<!-- Implementation badge -->
+<rect x="340" y="598" width="722" height="32" rx="6" fill="rgba(15,23,42,0.5)" stroke="#1e293b" stroke-width="1"/>
+<text x="701" y="618" fill="#64748b" font-size="9" font-weight="500" text-anchor="middle">Python PoC: port 8090 (FastAPI + diskcache)  •  Java PoC: port 8091 (Spring Boot + H2)  •  12-stage pipeline  •  RDF pattern store  •  TMF641 notifications</text>
+
+</svg>
+  </div>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-header"><div class="card-dot cyan"></div><h3>Actors (External)</h3></div>
+      <ul>
+        <li>• CRM/BSS systems submit TMF622 product orders</li>
+        <li>• API clients send TMF640/641 JSON programmatically</li>
+        <li>• NOC operators use unstructured natural language</li>
+        <li>• Web dashboard for interactive trace viewing</li>
+        <li>• Deepseek v4 cloud AI for plan generation (cache-miss)</li>
+        <li>• Network devices receive final validated configurations</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-dot emerald"></div><h3>System (Internal)</h3></div>
+      <ul>
+        <li>• API Gateway: Nginx TLS → FastAPI/Spring Boot</li>
+        <li>• Worker Pool: ThreadPoolExecutor / Hermes agents</li>
+        <li>• 12-stage pipeline: DETECT → MASK → CACHE → ... → VERIFY</li>
+        <li>• Pattern Engine: RDF triples, Jaccard matching, confidence 0.25→0.98</li>
+        <li>• Data stores: PostgreSQL/H2, Redis/diskcache, Knowledge Base</li>
+        <li>• Southbound: MCP servers bridge to real network devices</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-dot rose"></div><h3>Security & Data Sovereignty</h3></div>
+      <ul>
+        <li>• All MSISDNs/IPs tokenized before crossing the perimeter</li>
+        <li>• Token→real mapping in transient memory only — never persisted</li>
+        <li>• Blocked keyword validation after every LLM response</li>
+        <li>• AI outputs treated as untrusted — hard-gate validation</li>
+        <li>• Per-subscriber advisory locks (30s TTL, re-entrant)</li>
+        <li>• Runtime data corruption detection and self-healing</li>
+      </ul>
+    </div>
+  </div>
+
+  <p class="footer">Telecom Agentic Orchestration Engine • Two independent implementations running on ports 8090 + 8091 • 7-phase build plan for production target</p>
+</div>
 </body>
 </html>
