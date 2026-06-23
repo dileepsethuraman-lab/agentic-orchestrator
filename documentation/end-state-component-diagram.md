@@ -212,16 +212,16 @@ graph TB
     DOCKER --> DEPLOY
 
     %% Styling
-    classDef external fill:#1e1b4b,stroke:#6366f1
-    classDef edge fill:#14532d,stroke:#22c55e
-    classDef api fill:#1e3a5f,stroke:#3b82f6
-    classDef pipeline fill:#0f172a,stroke:#64748b
-    classDef mcp fill:#3b0764,stroke:#a855f7
-    classDef storage fill:#450a0a,stroke:#ef4444
-    classDef notify fill:#0c4a6e,stroke:#06b6d4
-    classDef frontend fill:#064e3b,stroke:#10b981
-    classDef cicd fill:#431407,stroke:#f97316
-    classDef workers fill:#1a2e05,stroke:#84cc16
+    classDef external fill:#c7d2fe,stroke:#6366f1
+    classDef edge fill:#bbf7d0,stroke:#22c55e
+    classDef api fill:#bfdbfe,stroke:#3b82f6
+    classDef pipeline fill:#e2e8f0,stroke:#64748b
+    classDef mcp fill:#e9d5ff,stroke:#a855f7
+    classDef storage fill:#fecaca,stroke:#ef4444
+    classDef notify fill:#a5f3fc,stroke:#06b6d4
+    classDef frontend fill:#a7f3d0,stroke:#10b981
+    classDef cicd fill:#fed7aa,stroke:#f97316
+    classDef workers fill:#ecfccb,stroke:#84cc16
 
     class SF,DYN,CRM_CUSTOM,DEEPSEEK external
     class NGINX edge
