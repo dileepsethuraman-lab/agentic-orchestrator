@@ -8,8 +8,8 @@
 documentation/
 ├── README.md                              ← This file
 ├── build-prompts/                         ← Agent build instructions
-│   ├── AGENT_BUILD_PROMPT.md              # Prescriptive: exact code, paths, CSS rules
-│   └── REPLICATION_PROMPT.md             # Generic: behavioral spec, implementation-agnostic
+│   ├── PoC-prescriptive-build-prompt.md   # Prescriptive: exact code, paths, CSS rules
+│   └── PoC-behavioral-specification.md    # Generic: behavioral spec, implementation-agnostic
 ├── end-state/                             ← Target production architecture
 │   ├── architectural-blueprint.md         # Master architecture: topology, sequences, deployment
 │   ├── api-specification.md               # 30+ endpoints (TMF622/641/640/638/639 + internal)
@@ -24,8 +24,8 @@ documentation/
 
 | Document | Audience | Purpose |
 |----------|----------|---------|
-| `build-prompts/AGENT_BUILD_PROMPT.md` | AI agents | Reproduce the PoC exactly — every line of code specified |
-| `build-prompts/REPLICATION_PROMPT.md` | AI agents | Build a functionally identical PoC independently |
+| `build-prompts/PoC-prescriptive-build-prompt.md` | AI agents | Reproduce the PoC exactly — every line of code specified |
+| `build-prompts/PoC-behavioral-specification.md` | AI agents | Build a functionally identical PoC independently |
 | `end-state/architectural-blueprint.md` | Architects, engineers | Understand the full production target architecture |
 | `end-state/api-specification.md` | Integration engineers | Implement CRM-facing and internal APIs |
 | `end-state/component-specification.md` | Developers | Build individual modules with class signatures and DB schemas |
