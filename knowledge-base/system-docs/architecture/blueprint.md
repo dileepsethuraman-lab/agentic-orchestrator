@@ -97,7 +97,7 @@ graph TB
     subgraph Stores["Persistent Stores"]
         direction LR
         DISKCACHE[("diskcache.Cache<br/>SQLite-backed<br/>cache_store/")]
-        PATTERNS["Pattern Index<br/>orch:idx:patterns<br/>service_type → [pid]"]
+        PATTERNS["Pattern Index<br/>orch:idx:patterns<br/>service_type → pid"]
         MODELS["Service Models<br/>orch:sub:{id}<br/>with corruption guard"]
         LOCKS["Subscriber Locks<br/>lock:sub:{id}<br/>TTL 30s"]
         KB[("Knowledge Base<br/>core-ontology.md<br/>standards-index.md<br/>tmf-notification-schemas.md<br/>SERVICE_RESOURCES")]
@@ -501,7 +501,7 @@ flowchart LR
     end
 
     subgraph BRIDGE["KB→Code Bridge"]
-        SR["SERVICE_RESOURCES dict<br/>(server_live.py L714-761)<br/>mobile / l3vpn / sdwan / broadband<br/>Each: domain, standards,<br/>required_resources[], lifecycle"]
+        SR["SERVICE_RESOURCES dict<br/>(server_live.py L714-761)<br/>mobile / l3vpn / sdwan / broadband<br/>Each: domain, standards,<br/>required_resources, lifecycle"]
         WF["WF_MAP dict<br/>(server_live.py L765-777)<br/>NE type → workflow name"]
         KB_SEED["seed_kb_patterns()<br/>(server_live.py L668-779)<br/>Pre-populate pattern store<br/>with KB-derived patterns<br/>confidence=0.25"]
         RAG_CTX["load_kb_context(svc)<br/>(server_live.py L1041-1081)<br/>Reads KB files → structured context<br/>for LLM prompt injection"]
@@ -524,7 +524,7 @@ flowchart LR
     end
 
     subgraph PSTORE["Pattern Store (diskcache.Cache)"]
-        PIDX["orch:idx:patterns<br/>{mobile: [pat:...],<br/> l3vpn: [...], ...}"]
+        PIDX["orch:idx:patterns<br/>{mobile: pat:...,<br/> l3vpn: ..., ...}"]
         PATT["orch:pat:{id}<br/>PatternNode objects<br/>with triples, resources,<br/>confidence lifecycle"]
     end
 

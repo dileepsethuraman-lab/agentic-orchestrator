@@ -100,7 +100,7 @@ graph TB
         TMF640["TMF640 Endpoint<br/>POST /api/tmf640/serviceActivation"]
         TMF638["TMF638 Endpoint<br/>GET /api/tmf638/service"]
         TMF639["TMF639 Endpoint<br/>GET /api/tmf639/resource"]
-        DECOMP["Order Decomposition Engine<br/>ProductOrder → [ServiceOrder]"]
+        DECOMP["Order Decomposition Engine<br/>ProductOrder → ServiceOrders"]
     end
 
     subgraph MQ["MESSAGE QUEUE LAYER — RabbitMQ"]
