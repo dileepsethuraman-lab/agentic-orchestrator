@@ -140,7 +140,7 @@ The end-state documentation in `documentation/end-state/` describes the full pro
 | See the pipeline trace UI layout | `knowledge-base/system-docs/components/frontend-components.md` |
 | Rebuild the PoC exactly (prescriptive) | `documentation/build-prompts/PoC-prescriptive-build-prompt.md` |
 | Rebuild a functionally identical PoC independently | `documentation/build-prompts/PoC-behavioral-specification.md` |
-| Understand how patterns are learned and used | `poc/system-docs/pattern-store-examples.md` |
+| Understand how patterns are learned and used | `knowledge-base/system-docs/pattern-store-examples.md` |
 | See the production target architecture | `documentation/end-state/architectural-blueprint.md` |
 | Understand design decisions and trade-offs | `documentation/end-state/solution-design.md` |
 | See the full API for the end-state system | `documentation/end-state/api-specification.md` |
