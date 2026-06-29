@@ -6,6 +6,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import java.nio.file.Path;
+
 @Configuration
 public class OrchestratorConfig {
 
@@ -30,7 +32,13 @@ public class OrchestratorConfig {
     }
 
     @Bean
-    public PipelineEngine pipelineEngine(PatternStore patterns, ServiceModelStore serviceModels, SubscriberLock subscriberLock) {
-        return new PipelineEngine(patterns, serviceModels, subscriberLock);
+    public DSLStore dslStore() {
+        return new DSLStore(Path.of("knowledge-base", "dsl-definitions"));
+    }
+
+    @Bean
+    public PipelineEngine pipelineEngine(PatternStore patterns, DSLStore dslStore,
+                                         ServiceModelStore serviceModels, SubscriberLock subscriberLock) {
+        return new PipelineEngine(patterns, dslStore, serviceModels, subscriberLock);
     }
 }

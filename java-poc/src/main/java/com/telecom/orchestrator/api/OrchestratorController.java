@@ -101,17 +101,17 @@ public class OrchestratorController {
 
     @PostMapping("/api/config/cache")
     public ResponseEntity<?> setCacheConfig(@RequestBody Map<String, Object> request) {
-        String engine = (String) request.getOrDefault("engine", "");
-        if (!"pattern".equals(engine) && !"dsl".equals(engine)) {
+        String newEngine = (String) request.getOrDefault("engine", "");
+        if (!"pattern".equals(newEngine) && !"dsl".equals(newEngine)) {
             return ResponseEntity.status(400).body(Map.of(
-                "error", "Unknown engine '" + engine + "'. Use 'pattern' or 'dsl'."
+                "error", "Unknown engine '" + newEngine + "'. Use 'pattern' or 'dsl'."
             ));
         }
-        engine.setCacheEngine(engine);
+        engine.setCacheEngine(newEngine);
         return ResponseEntity.ok(Map.of(
             "status", "ok",
-            "engine", engine,
-            "message", "Cache engine switched to: " + engine
+            "engine", newEngine,
+            "message", "Cache engine switched to: " + newEngine
         ));
     }
 
