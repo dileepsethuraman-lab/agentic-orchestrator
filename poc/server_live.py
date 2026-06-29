@@ -426,7 +426,7 @@ class PatternEngine:
     """RDF-inspired pattern store with learning, confidence scoring, and KB reasoning."""
 
     INSTANCE_ATTRS = {"msisdn", "imsi", "imei", "pe_ip", "hostname", "serviceid",
-                       "serial", "loopback", "management_ip"}
+                       "serial", "loopback", "management_ip", "text_hash"}
 
     def __init__(self, cache: diskcache.Cache):
         self.cache = cache
@@ -461,11 +461,11 @@ class PatternEngine:
 
     def _match_score(self, pat_chars: dict, req_chars: dict) -> float:
         """Jaccard-like match: how many service-defining chars match.
-        Empty pat_chars (KB-seeded wildcard) matches any request at 0.25 confidence."""
-        pat_keys = set(pat_chars.keys())
+        Empty pat_chars (KB-seeded wildcard) returns 0.0 — NOT a cache hit."""
+        pat_keys = set(k for k in pat_chars if k not in self.INSTANCE_ATTRS)
         req_keys = set(k for k in req_chars if k not in self.INSTANCE_ATTRS)
         if not pat_keys:
-            return 0.25  # wildcard — KB-seeded pattern, low confidence
+            return 0.0  # KB-seeded wildcard — serves as device template, NOT a cache hit
         if not req_keys:
             return 1.0  # no service-defining chars in request → match anything
         intersection = 0
@@ -1342,17 +1342,18 @@ def seed_kb_patterns():
         # Build characteristics from KB (empty for now — matches any request)
         chars = {}
 
-        # Learn the KB-seeded pattern
+        # Learn the KB-seeded pattern (confidence=0.0 — serves as device template, not cache hit)
         existing = patterns._index.get(svc, [])
         if not existing:
             patterns.learn(svc, chars, plan, all_chars={}, source="kb")
-            # Reset confidence to 0.25 for KB seeds
+            # Set confidence to 0.0 for KB seeds — they provide device/attribute structure
+            # but do NOT count as cache HITs. Real patterns are learned from LLM reasoning.
             for pid in patterns._index.get(svc, []):
                 pat = patterns._load(pid)
                 if pat and pat.source == "kb":
-                    pat.confidence = 0.25
+                    pat.confidence = 0.0
                     patterns._save(pat)
-                    logger.info("KB seed pattern: %s (svc=%s, %d NEs)",
+                    logger.info("KB seed template: %s (svc=%s, %d NEs) — confidence=0, MISS on lookup",
                                 pid, svc, len(devices))
 
 

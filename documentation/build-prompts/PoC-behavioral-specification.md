@@ -194,12 +194,14 @@ The system MUST provide an API endpoint for manually teaching patterns. A taught
 
 Maintain a service-type index: a dictionary mapping each service type to a list of pattern IDs. This index must be persisted alongside the pattern data.
 
-#### 2.7.8 KB Pattern Seeding
+#### 2.7.8 KB-Seeded Device Templates (NOT Cache Hits)
 
-On system startup, the knowledge base service definitions MUST be used to pre-populate the pattern store:
+On system startup, the knowledge base service definitions MUST be used to pre-populate the pattern store with **device templates**:
+
 1. For each service type, use the KB's required resources to build a skeleton plan with device names, workflow mappings, and attribute placeholders (`"<attribute_name>"`).
-2. Learn this plan as a KB-seeded pattern with empty characteristics (matches any request at 0.25 confidence).
-3. This ensures even the first-ever request for a service type hits the cache and receives KB-correct attribute names.
+2. Store this as a KB-seeded template with **empty characteristics and confidence=0.0**.
+3. These templates are **NOT cache hits** — they serve as device/attribute lookups for the LLM stage. The `_match_score` for empty characteristics returns 0.0 (MISS), forcing LLM reasoning on first encounter of any service type variant.
+4. After the LLM produces a plan with real characteristics (customer segment, SLA tier, etc.), a **real pattern** is auto-learned with confidence 0.3 and actual characteristics → future similar requests HIT this pattern.
 
 ### 2.7b DSL Cache Engine (Alternative Cache)
 
