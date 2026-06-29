@@ -12,6 +12,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.Locale;
 
 /**
  * RDF-inspired pattern engine with Jaccard matching, learning,
@@ -33,7 +35,7 @@ public class PatternStore {
     public static final Set<String> INSTANCE_ATTRS = Set.of(
             "msisdn", "imsi", "imei", "pe_ip",
             "hostname", "serviceid", "serial",
-            "loopback", "management_ip"
+            "loopback", "management_ip", "text_hash"
     );
 
     private final JdbcTemplate jdbc;
@@ -265,12 +267,12 @@ public class PatternStore {
                     Collections.emptyMap(),
                     "kb");
 
-            // Reset confidence for KB-sourced patterns
+            // KB-seeded templates serve as device/attribute lookups, NOT cache hits
             if (node != null) {
-                node.confidence = 0.25;
+                node.confidence = 0.0;
                 saveNode(node);
-                log.debug("Seeded KB pattern {} with confidence=0.25",
-                        node.id);
+                log.info("KB seed template: {} (svc={}, {} NEs) — confidence=0, MISS on lookup",
+                        node.id, node.serviceType, node.resources != null ? node.resources.size() : 0);
                 count++;
             }
         }
@@ -307,13 +309,19 @@ public class PatternStore {
     private double _matchScore(Map<String, Object> patChars,
                                Map<String, Object> reqChars) {
         Set<String> patKeys = patChars != null
-                ? patChars.keySet() : Collections.emptySet();
+                ? patChars.keySet().stream()
+                    .filter(k -> !INSTANCE_ATTRS.contains(k.toLowerCase(Locale.ROOT)))
+                    .collect(Collectors.toSet())
+                : Collections.emptySet();
         Set<String> reqKeys = reqChars != null
-                ? reqChars.keySet() : Collections.emptySet();
+                ? reqChars.keySet().stream()
+                    .filter(k -> !INSTANCE_ATTRS.contains(k.toLowerCase(Locale.ROOT)))
+                    .collect(Collectors.toSet())
+                : Collections.emptySet();
 
         // Edge cases per spec
         if (patKeys.isEmpty()) {
-            return 0.25;
+            return 0.0;  // KB-seeded wildcard — device template, NOT a cache hit
         }
         if (reqKeys.isEmpty()) {
             return 1.0;
@@ -326,7 +334,7 @@ public class PatternStore {
         union.addAll(reqKeys);
 
         if (union.isEmpty()) {
-            return 0.25; // both empty → pat empty rule
+            return 0.0;  // both empty — no service-defining chars
         }
 
         return (double) intersection.size() / (double) union.size();
