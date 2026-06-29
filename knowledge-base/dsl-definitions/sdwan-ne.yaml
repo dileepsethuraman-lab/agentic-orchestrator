@@ -1,0 +1,32 @@
+# ORCHaaS DSL — SD-WAN Network Elements
+# Schema: DSLNetworkElementSchema (configType: networkElements)
+configType: networkElements
+networkElements:
+  - vCPE-uCPE:
+      prefetch:
+        workflow: workflows/CPE_Deployment.sw.yaml
+      networkCharacteristics:
+        transport_links: "~request.characteristic[transport_links].value"
+        encryption: "~request.characteristic[encryption].value"
+        app_policy: "~request.characteristic[app_policy].value"
+        wan_interfaces: "~request.characteristic[wan_interfaces].value"
+      id: CPE-EDGE-01
+      state: active
+  - SD-WAN-Controller:
+      prefetch:
+        workflow: workflows/Controller_Setup.sw.yaml
+      networkCharacteristics:
+        policy_set: "~request.characteristic[policy_set].value"
+        site_list: "~request.characteristic[site_list].value"
+        template: "~request.characteristic[template].value"
+      id: CTRL-SJC-01
+      state: active
+  - Orchestrator:
+      prefetch:
+        workflow: workflows/ZTP_Bootstrap.sw.yaml
+      networkCharacteristics:
+        ztp_url: "~request.characteristic[ztp_url].value"
+        bootstrap_config: "~request.characteristic[bootstrap_config].value"
+        license_key: "~request.characteristic[license_key].value"
+      id: ORCH-ZTP-01
+      state: active

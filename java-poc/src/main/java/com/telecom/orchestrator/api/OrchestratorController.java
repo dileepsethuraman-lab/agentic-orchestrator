@@ -74,4 +74,65 @@ public class OrchestratorController {
     public Map<String, Object> health() {
         return Map.of("status", "ok", "cache_size", engine.listPatterns().size(), "backend", "H2/Spring Boot");
     }
+
+    // ── Cache Engine Configuration ──────────────────────
+    // Mirrors Python PoC POST /api/config/cache
+
+    @GetMapping("/api/config/cache")
+    public Map<String, Object> getCacheConfig() {
+        String currentEngine = engine.getCacheEngine();
+        // DSL metadata is only relevant when DSL is the active engine.
+        // When pattern is active, return empty to prevent cross-contamination.
+        boolean dslLoaded = "dsl".equals(currentEngine) && engine.isDslLoaded();
+        List<String> dslDefinitions = "dsl".equals(currentEngine)
+                ? engine.getDslServiceNames()
+                : List.of();
+        return Map.of(
+            "engine", currentEngine,
+            "availableEngines", List.of("pattern", "dsl"),
+            "description", Map.of(
+                "pattern", "RDF-inspired auto-learning pattern store with Jaccard matching",
+                "dsl", "YAML DSL deterministic templates — always HIT for known services"
+            ),
+            "dslLoaded", dslLoaded,
+            "dslDefinitions", dslDefinitions
+        );
+    }
+
+    @PostMapping("/api/config/cache")
+    public ResponseEntity<?> setCacheConfig(@RequestBody Map<String, Object> request) {
+        String engine = (String) request.getOrDefault("engine", "");
+        if (!"pattern".equals(engine) && !"dsl".equals(engine)) {
+            return ResponseEntity.status(400).body(Map.of(
+                "error", "Unknown engine '" + engine + "'. Use 'pattern' or 'dsl'."
+            ));
+        }
+        engine.setCacheEngine(engine);
+        return ResponseEntity.ok(Map.of(
+            "status", "ok",
+            "engine", engine,
+            "message", "Cache engine switched to: " + engine
+        ));
+    }
+
+    // ── DSL Definitions ─────────────────────────────────
+
+    @GetMapping("/api/dsl/definitions")
+    public Map<String, Object> listDslDefinitions() {
+        return engine.listDslDefinitions();
+    }
+
+    @GetMapping("/api/dsl/plan/{serviceType}")
+    public ResponseEntity<?> getDslPlan(@PathVariable String serviceType) {
+        Map<String, Object> plan = engine.getDslPlan(serviceType);
+        if (plan == null) {
+            return ResponseEntity.status(404).body(Map.of(
+                "error", "No DSL definition for service type: " + serviceType
+            ));
+        }
+        return ResponseEntity.ok(Map.of(
+            "serviceType", serviceType,
+            "plan", plan
+        ));
+    }
 }

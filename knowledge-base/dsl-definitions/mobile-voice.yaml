@@ -1,0 +1,108 @@
+# ORCHaaS DSL — Mobile Voice Service Definition
+# Schema: DSLServiceDefinitionSchema (configType: serviceDefinition)
+configType: serviceDefinition
+version: v1.0
+systemCode: MOB-VOICE
+tmfProperties:
+  name: Mobile Voice Service
+  description: Voice and messaging service for mobile subscribers over 2G/3G/4G/5G
+  specification: "a1b2c3d4e5f6a7b8c9d0e1f2"
+  tmfApi: TMF640
+  tmfApiVersion: v4.1.0
+  serviceRelationship:
+    - mobile-ims:
+        alias: IMS Core
+        serviceSpecification:
+          id: "b2c3d4e5f6a7b8c9d0e1f2a3b4"
+          href: /serviceCatalog/serviceSpecification/b2c3d4e5
+        tmfApi: TMF640
+        tmfApiVersion: v4.1.0
+    - mobile-smsc:
+        alias: SMSC
+        serviceSpecification:
+          id: "c3d4e5f6a7b8c9d0e1f2a3b4c5"
+          href: /serviceCatalog/serviceSpecification/c3d4e5f6
+        tmfApi: TMF640
+        tmfApiVersion: v4.1.0
+  entityRelationship:
+    - hlr-provision:
+        task: Subscriber Profile Provisioning
+        entitySpecification:
+          id: "d4e5f6a7b8c9d0e1f2a3b4c5d6"
+          href: /resourceCatalog/resourceSpecification/HLR-HSS
+
+lifecycle:
+  acknowledged:
+    supportingServices:
+      - hlr-provision:
+          parentToChildRelationship: supports
+          supportingServices:
+            - serviceCharacteristics:
+                msisdn: "~request.characteristic[msisdn].value"
+                imsi: "~request.characteristic[imsi].value"
+                subscriber_profile: "~request.characteristic[subscriber_profile].value"
+                roaming_profile: "~request.characteristic[roaming_profile].value"
+      - ims-register:
+          parentToChildRelationship: supports
+          supportingServices:
+            - serviceCharacteristics:
+                msisdn: "~request.characteristic[msisdn].value"
+                imsi: "~request.characteristic[imsi].value"
+                volte_enabled: "~request.characteristic[volte_enabled].value"
+                codec_profile: "~request.characteristic[codec_profile].value"
+      - pcrf-configure:
+          parentToChildRelationship: supports
+          supportingServices:
+            - serviceCharacteristics:
+                apn: "~request.characteristic[apn].value"
+                qos_profile: "~request.characteristic[qos_profile].value"
+                charging_rule: "~request.characteristic[charging_rule].value"
+                bandwidth_limit: "~request.characteristic[bandwidth_limit].value"
+      - smsc-provision:
+          parentToChildRelationship: supports
+          supportingServices:
+            - serviceCharacteristics:
+                msisdn: "~request.characteristic[msisdn].value"
+                routing: "~request.characteristic[routing].value"
+                validity_period: "~request.characteristic[validity_period].value"
+      - msc-provision:
+          parentToChildRelationship: supports
+          supportingServices:
+            - serviceCharacteristics:
+                msisdn: "~request.characteristic[msisdn].value"
+                imsi: "~request.characteristic[imsi].value"
+                location_area: "~request.characteristic[location_area].value"
+                tac: "~request.characteristic[tac].value"
+      - sbc-configure:
+          parentToChildRelationship: supports
+          supportingServices:
+            - serviceCharacteristics:
+                sip_domain: "~request.characteristic[sip_domain].value"
+                codec_list: "~request.characteristic[codec_list].value"
+                media_handling: "~request.characteristic[media_handling].value"
+
+variables:
+  msisdn: "447700000000"
+  imsi: "234150000000000"
+
+shortcuts:
+  gold_profile: Gold_VoLTE_IntlRoam
+  platinum_profile: Plat_5GSA_eMBB
+  silver_profile: Silver_VoLTE_Domestic
+
+outstanding:
+  feature: "+"
+  operatingState: "+"
+  serviceCharacteristics: "+"
+  state: "+"
+  networkElements: "+"
+  place: "_"
+  relatedParty: "_"
+  type: "+"
+
+entityRelationship:
+  - hlr-entity:
+      task: HLR Provisioning
+      entitySpecification:
+        id: "e5f6a7b8c9d0e1f2a3b4c5d6e7"
+        href: /resourceCatalog/resourceSpecification/HLR-HSS

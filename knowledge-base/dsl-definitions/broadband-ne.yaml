@@ -1,0 +1,40 @@
+# ORCHaaS DSL — Broadband FTTH Network Elements
+# Schema: DSLNetworkElementSchema (configType: networkElements)
+configType: networkElements
+networkElements:
+  - OLT:
+      prefetch:
+        workflow: workflows/ONT_Provisioning.sw.yaml
+      networkCharacteristics:
+        ont_model: "~request.characteristic[ont_model].value"
+        vlan: "~request.characteristic[vlan].value"
+        speed_profile: "~request.characteristic[speed_profile].value"
+        dba_profile: "~request.characteristic[dba_profile].value"
+      id: OLT-SJC-01
+      state: active
+  - BNG-BRAS:
+      prefetch:
+        workflow: workflows/IP_Pool_Allocation.sw.yaml
+      networkCharacteristics:
+        ip_pool: "~request.characteristic[ip_pool].value"
+        subscriber_profile: "~request.characteristic[subscriber_profile].value"
+        qos_policy: "~request.characteristic[qos_policy].value"
+      id: BNG-SJC-01
+      state: active
+  - RADIUS:
+      prefetch:
+        workflow: workflows/AAA_Configuration.sw.yaml
+      networkCharacteristics:
+        nas_identifier: "~request.characteristic[nas_identifier].value"
+        shared_secret: "~request.characteristic[shared_secret].value"
+        auth_method: "~request.characteristic[auth_method].value"
+      id: RADIUS-SJC-01
+      state: active
+  - EMS:
+      prefetch:
+        workflow: workflows/EMS_Setup.sw.yaml
+      networkCharacteristics:
+        snmp_community: "~request.characteristic[snmp_community].value"
+        trap_destinations: "~request.characteristic[trap_destinations].value"
+      id: EMS-SJC-01
+      state: active

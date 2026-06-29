@@ -1,0 +1,47 @@
+# ORCHaaS DSL — L3VPN Network Elements
+# Schema: DSLNetworkElementSchema (configType: networkElements)
+configType: networkElements
+networkElements:
+  - PE-Router:
+      prefetch:
+        workflow: workflows/PE_Configuration.sw.yaml
+      networkCharacteristics:
+        vrf_name: "~request.characteristic[vrf_name].value"
+        rd: "~request.characteristic[rd].value"
+        rt_import: "~request.characteristic[rt_import].value"
+        rt_export: "~request.characteristic[rt_export].value"
+        bgp_peer: "~request.characteristic[bgp_peer].value"
+        _for_:
+          each: "~ids"
+          as: serviceId
+          keys: [vrf_name, pe_ip]
+      id: PE-SJC-01
+      state: active
+  - Route-Reflector:
+      prefetch:
+        workflow: workflows/BGP_Peering.sw.yaml
+      networkCharacteristics:
+        cluster_id: "~request.characteristic[cluster_id].value"
+        peer_group: "~request.characteristic[peer_group].value"
+        asn: "~request.characteristic[asn].value"
+      id: RR-SJC-01
+      state: active
+  - VRF-Instance:
+      prefetch:
+        workflow: workflows/VRF_Allocation.sw.yaml
+      networkCharacteristics:
+        vrf_name: "~request.characteristic[vrf_name].value"
+        rd: "~request.characteristic[rd].value"
+        route_targets: "~request.characteristic[route_targets].value"
+        interfaces: "~request.characteristic[interfaces].value"
+      id: VRF-ACME-SJC
+      state: active
+  - NMS:
+      prefetch:
+        workflow: workflows/Monitoring_Setup.sw.yaml
+      networkCharacteristics:
+        snmp_community: "~request.characteristic[snmp_community].value"
+        syslog_server: "~request.characteristic[syslog_server].value"
+        netflow_collector: "~request.characteristic[netflow_collector].value"
+      id: NMS-01
+      state: active

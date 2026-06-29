@@ -1,0 +1,80 @@
+# ORCHaaS DSL — Mobile Voice Network Elements
+# Schema: DSLNetworkElementSchema (configType: networkElements)
+configType: networkElements
+networkElements:
+  - HLR-HSS:
+      prefetch:
+        workflow: workflows/HLR_Provisioning.sw.yaml
+        _if_:
+          - "~request.characteristic[productId].value == 'mobile-voice'"
+        variables:
+          msisdn: "~request.characteristic[msisdn].value"
+          imsi: "~request.characteristic[imsi].value"
+      networkCharacteristics:
+        subscriber_profile: "~request.characteristic[subscriber_profile].value"
+        roaming_profile: "~request.characteristic[roaming_profile].value"
+        _for_:
+          each: "~ids"
+          as: serviceId
+          keys: [msisdn, imsi]
+      id: HLR-01
+      state: active
+      _if_:
+        - "~request.action == 'activate'"
+  - IMS-Core:
+      prefetch:
+        workflow: workflows/IMS_Registration.sw.yaml
+        _if_:
+          - "~request.characteristic[volte_enabled].value == 'true'"
+      networkCharacteristics:
+        volte_enabled: "~request.characteristic[volte_enabled].value"
+        codec_profile: "~request.characteristic[codec_profile].value"
+        _for_:
+          each: "~ids"
+          as: serviceId
+          keys: [msisdn, imsi]
+      id: IMS-CORE-01
+      state: active
+  - PCRF-PCF:
+      prefetch:
+        workflow: workflows/APN_Configuration.sw.yaml
+      networkCharacteristics:
+        apn: "~request.characteristic[apn].value"
+        qos_profile: "~request.characteristic[qos_profile].value"
+        charging_rule: "~request.characteristic[charging_rule].value"
+        bandwidth_limit: "~request.characteristic[bandwidth_limit].value"
+      id: PCRF-01
+      state: active
+  - SMSC:
+      prefetch:
+        workflow: workflows/Charging_Rule_Setup.sw.yaml
+      networkCharacteristics:
+        routing: "~request.characteristic[routing].value"
+        validity_period: "~request.characteristic[validity_period].value"
+        _for_:
+          each: "~ids"
+          as: serviceId
+          keys: [msisdn]
+      id: SMSC-01
+      state: active
+  - MSC-MME:
+      prefetch:
+        workflow: workflows/Mobility_Configuration.sw.yaml
+      networkCharacteristics:
+        location_area: "~request.characteristic[location_area].value"
+        tac: "~request.characteristic[tac].value"
+        _for_:
+          each: "~ids"
+          as: serviceId
+          keys: [msisdn, imsi]
+      id: MSC-01
+      state: active
+  - SBC:
+      prefetch:
+        workflow: workflows/SBC_Configuration.sw.yaml
+      networkCharacteristics:
+        sip_domain: "~request.characteristic[sip_domain].value"
+        codec_list: "~request.characteristic[codec_list].value"
+        media_handling: "~request.characteristic[media_handling].value"
+      id: SBC-01
+      state: active

@@ -32,6 +32,26 @@
       font-size: 0.65rem; padding: 0.15rem 0.55rem; border-radius: 999px;
       background: rgba(34, 211, 238, 0.15); color: #22d3ee; border: 1px solid rgba(34, 211, 238, 0.3);
     }
+    /* Cache engine toggle */
+    .cache-toggle { position: relative; display: inline-flex; align-items: center; cursor: pointer; }
+    .cache-toggle input { display: none; }
+    .cache-slider {
+      display: flex; align-items: center;
+      background: #1e293b; border: 1px solid #334155;
+      border-radius: 6px; overflow: hidden; height: 24px;
+      font-size: 0.55rem; font-weight: 600; transition: all 0.2s;
+    }
+    .cache-option-left, .cache-option-right {
+      padding: 0.15rem 0.45rem; transition: all 0.2s;
+    }
+    .cache-option-left { color: #22d3ee; background: rgba(34, 211, 238, 0.12); }
+    .cache-option-right { color: #475569; }
+    .cache-toggle input:checked + .cache-slider .cache-option-right {
+      color: #fbbf24; background: rgba(251, 191, 36, 0.12);
+    }
+    .cache-toggle input:checked + .cache-slider .cache-option-left {
+      color: #475569; background: transparent;
+    }
 
     .main { display: flex; flex: 1; overflow: hidden; }
     .panel { padding: 1.25rem; overflow-y: auto; }
@@ -246,6 +266,46 @@
     .ne-attr-val { color: #94a3b8; font-weight: 500; max-width: 55%; text-align: right; overflow: hidden; text-overflow: ellipsis; }
     .ne-attr-val.status-ok { color: #4ade80; }
 
+    /* DSL Reference panel — always-visible service definition catalog */
+    .dsl-reference {
+      margin-top: 1rem; padding: 0 1.25rem 1rem; border-bottom: 1px solid #1e293b;
+    }
+    .dsl-reference-header {
+      display: flex; align-items: center; gap: 0.5rem; cursor: pointer;
+      padding: 0.6rem 0; user-select: none;
+    }
+    .dsl-reference-header h3 { font-size: 0.72rem; color: #60a5fa; font-weight: 600; }
+    .dsl-reference-header .dsl-count {
+      font-size: 0.55rem; padding: 0.1rem 0.4rem; border-radius: 4px;
+      background: rgba(59, 130, 246, 0.12); color: #60a5fa;
+    }
+    .dsl-reference-header .dsl-chevron { font-size: 0.65rem; color: #64748b; transition: transform 0.2s; }
+    .dsl-reference-header .dsl-chevron.open { transform: rotate(90deg); }
+    .dsl-reference-body { display: none; }
+    .dsl-reference-body.open { display: block; }
+    .dsl-service-section { margin-bottom: 0.8rem; }
+    .dsl-service-title {
+      font-size: 0.65rem; font-weight: 600; color: #a78bfa;
+      padding: 0.3rem 0; border-bottom: 1px solid rgba(167,139,250,0.15);
+      margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.4rem;
+      cursor: pointer;
+    }
+    .dsl-service-title:hover { color: #c4b5fd; }
+    .dsl-service-title .dsl-domain { font-weight: 400; color: #64748b; font-size: 0.58rem; }
+    .dsl-ne-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.3rem; }
+    .dsl-ne-chip {
+      background: rgba(15, 23, 42, 0.6); border: 1px solid #1e293b;
+      border-radius: 5px; padding: 0.35rem 0.5rem; font-size: 0.58rem;
+      display: flex; align-items: center; gap: 0.35rem; transition: border-color 0.15s;
+      cursor: pointer;
+    }
+    .dsl-ne-chip:hover { border-color: rgba(59,130,246,0.3); }
+    .dsl-ne-chip .dsl-ne-icon { font-size: 0.75rem; flex-shrink: 0; }
+    .dsl-ne-chip .dsl-ne-info { flex: 1; min-width: 0; }
+    .dsl-ne-chip .dsl-ne-name { color: #e2e8f0; font-weight: 500; }
+    .dsl-ne-chip .dsl-ne-wf { color: #475569; font-size: 0.52rem; margin-top: 0.1rem; }
+    .dsl-ne-chip .dsl-ne-attrs { color: #64748b; font-size: 0.5rem; margin-top: 0.15rem; }
+
     .empty-state { text-align: center; padding: 4rem 2rem; color: #475569; }
     .empty-state .icon { font-size: 3rem; margin-bottom: 0.75rem; }
     .empty-state p { font-size: 0.75rem; line-height: 1.6; }
@@ -277,6 +337,28 @@
     .zoom-container .ne-card { padding: 1.5rem 1.75rem; min-width: 400px; }
     .zoom-container .ne-grid { grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); }
     .zoom-container .ne-card-icon { font-size: 1.4rem; }
+    /* DSL zoom — large */
+    .zoom-container .dsl-ne-chip {
+      padding: 2rem 2.5rem; min-width: 500px; font-size: 1.4rem; border-width: 2px;
+      border-color: rgba(59,130,246,0.5); border-radius: 10px;
+      background: rgba(15, 23, 42, 0.9);
+    }
+    .zoom-container .dsl-ne-chip .dsl-ne-icon { font-size: 2.5rem; }
+    .zoom-container .dsl-ne-chip .dsl-ne-name { font-size: 1.5rem; font-weight: 700; }
+    .zoom-container .dsl-ne-chip .dsl-ne-wf { font-size: 1.1rem; color: #94a3b8; margin-top: 0.3rem; }
+    .zoom-container .dsl-ne-chip .dsl-ne-attrs { font-size: 1rem; color: #94a3b8; margin-top: 0.25rem; }
+    .zoom-container .dsl-service-section {
+      background: rgba(15, 23, 42, 0.9); border: 2px solid rgba(167,139,250,0.5);
+      border-radius: 10px; padding: 2rem 2.5rem; min-width: 550px;
+    }
+    .zoom-container .dsl-service-title {
+      font-size: 1.3rem; padding: 0.6rem 0; margin-bottom: 1rem;
+      border-bottom-color: rgba(167,139,250,0.3);
+    }
+    .zoom-container .dsl-service-title .dsl-domain { font-size: 1rem; }
+    .zoom-container .dsl-ne-list {
+      grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 0.7rem;
+    }
     .zoom-close-hint {
       position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%);
       font-size: 0.75rem; color: #64748b; pointer-events: none;
@@ -293,7 +375,6 @@
     <div class="pulse"></div>
     <h1>Telecom Agentic Orchestration Engine</h1>
     <span class="badge">PoC Demo</span>
-    <span style="margin-left:auto;font-size:0.6rem;color:#475569;">Cache-First · Data-Sovereign · Cloud-Reasoned</span>
   </div>
 
   <div class="main">
@@ -305,6 +386,19 @@
       <div class="btn-row">
         <button class="btn-primary" id="btn-submit" onclick="submitRequest()">▶ Execute</button>
         <button class="btn-secondary" onclick="clearAll()">Clear</button>
+      </div>
+      <div class="left-section" style="margin-top:1.2rem;padding:0.8rem;border:2px solid rgba(59,130,246,0.4);border-radius:8px;background:rgba(59,130,246,0.06);">
+        <label style="color:#60a5fa !important;font-size:0.75rem;">⚡ Cache Engine</label>
+        <div style="display:flex;align-items:center;gap:0.8rem;margin-top:0.5rem;">
+          <label class="cache-toggle">
+            <input type="checkbox" id="cache-toggle" onchange="toggleCacheEngine()">
+            <span class="cache-slider" style="height:36px;font-size:0.75rem;font-weight:700;border-color:rgba(59,130,246,0.5);">
+              <span class="cache-option-left" style="padding:0.3rem 1rem;">Pattern</span>
+              <span class="cache-option-right" style="padding:0.3rem 1rem;">DSL</span>
+            </span>
+          </label>
+        </div>
+        <div id="cache-engine-desc" style="font-size:0.62rem;color:#94a3b8;margin-top:0.5rem;line-height:1.4;"></div>
       </div>
       <div class="left-section" style="margin-top:1.2rem;">
         <label>Sample Requests</label>
@@ -329,6 +423,18 @@
         <div id="final-summary"></div>
         <div id="network-elements"></div>
       </div>
+
+      <!-- DSLs — runtime-populated after DSL-engine request completes -->
+      <div class="dsl-reference" id="dsl-reference" style="display:none;">
+        <div class="dsl-reference-header" onclick="toggleDslReference()">
+          <span class="dsl-chevron" id="dsl-chevron">▶</span>
+          <h3>📋 DSLs</h3>
+          <span class="dsl-count" id="dsl-count"></span>
+        </div>
+        <div class="dsl-reference-body" id="dsl-reference-body">
+          <div id="dsl-reference-content"></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -338,6 +444,241 @@
   <div class="zoom-close-hint" id="zoom-hint">Click anywhere outside to close · Esc</div>
 
   <script>
+    // ── Cache Engine Toggle ─────────────────────────────
+    let currentCacheEngine = 'pattern';
+
+    async function initCacheConfig() {
+      try {
+        const resp = await fetch('/api/config/cache');
+        const data = await resp.json();
+        currentCacheEngine = data.engine;
+        document.getElementById('cache-toggle').checked = (data.engine === 'dsl');
+        const desc = document.getElementById('cache-engine-desc');
+        if (desc) {
+          desc.textContent = data.engine === 'dsl'
+            ? 'YAML DSL templates — deterministic plans, zero-latency, always HIT for known services'
+            : 'RDF auto-learning pattern store with Jaccard similarity — learns from every orchestration';
+        }
+      } catch (e) {
+        console.warn('Failed to load cache config:', e);
+      }
+    }
+
+    async function toggleCacheEngine() {
+      const checked = document.getElementById('cache-toggle').checked;
+      const engine = checked ? 'dsl' : 'pattern';
+      const desc = document.getElementById('cache-engine-desc');
+      try {
+        const resp = await fetch('/api/config/cache', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ engine }),
+        });
+        const data = await resp.json();
+        if (data.status === 'ok') {
+          currentCacheEngine = data.engine;
+          if (desc) {
+            desc.textContent = data.engine === 'dsl'
+              ? 'YAML DSL templates — deterministic plans, zero-latency, always HIT for known services'
+              : 'RDF auto-learning pattern store with Jaccard similarity — learns from every orchestration';
+          }
+          console.log('Cache engine:', data.message);
+        }
+      } catch (e) {
+        console.error('Failed to toggle cache engine:', e);
+        document.getElementById('cache-toggle').checked = !checked;
+      }
+    }
+
+    // ── Runtime DSL Display ──────────────────────────────────
+    // Shown only after a request completes with DSL cache engine.
+    // Displays the populated Service DSL, Intent DSL, and NE trace.
+
+    const NE_ICONS = {
+      'HLR-HSS': '🗄️', 'IMS-Core': '📞', 'PCRF-PCF': '📋', 'SMSC': '💬',
+      'MSC-MME': '📶', 'SBC': '🔊',
+      'PE-Router': '🔀', 'Route-Reflector': '🔄', 'VRF-Instance': '📊', 'NMS': '🖥️',
+      'vCPE-uCPE': '☁️', 'SD-WAN-Controller': '🎛️', 'Orchestrator': '⚙️',
+      'OLT': '📡', 'BNG-BRAS': '🌐', 'RADIUS': '🔐', 'EMS': '🖥️',
+    };
+
+    function toggleDslReference() {
+      const body = document.getElementById('dsl-reference-body');
+      const chevron = document.getElementById('dsl-chevron');
+      const isOpen = body.classList.toggle('open');
+      chevron.classList.toggle('open', isOpen);
+      chevron.textContent = isOpen ? '▼' : '▶';
+    }
+
+    function renderRuntimeDSLs(fs) {
+      const pm = fs.patternMatch || {};
+      if (pm.result !== 'DSL') {
+        // Hide DSL panel when NOT using DSL engine (prevent cross-engine leakage)
+        document.getElementById('dsl-reference').style.display = 'none';
+        return;
+      }
+
+      const dslTemplate = fs.dslTemplate || {};
+      const prov = pm.dslProvenance || {};
+      const operation = fs.dslOperation || 'activate';
+      const populatedNEs = fs.dslTrace || [];
+
+      // Show the section
+      const section = document.getElementById('dsl-reference');
+      section.style.display = '';
+
+      const included = populatedNEs.filter(n => n.decision === 'INCLUDE').length;
+      const skipped = populatedNEs.filter(n => n.decision === 'SKIP').length;
+      document.getElementById('dsl-count').textContent =
+        `${included + skipped} NEs · ${operation}`;
+
+      let html = '';
+
+      // ── Service DSL ──
+      const sd = dslTemplate.populated_service_definition || {};
+      const tmf = sd.tmfProperties || {};
+      const lifecycle = (sd.lifecycle || {}).acknowledged || {};
+      const sdSupportingServices = (lifecycle.supportingServices || []);
+      const relationships = sd.serviceRelationship || [];
+      const entities = sd.entityRelationship || [];
+
+      html += `<div class="dsl-service-section">
+        <div class="dsl-service-title">
+          <span>Service DSL</span>
+          <span class="dsl-domain">— ${escapeHtml(dslTemplate.system_code || prov.systemCode || '?')} ${escapeHtml(dslTemplate.version || prov.templateVersion || '')}</span>
+        </div>
+        <div class="dsl-meta" style="font-size:0.58rem;color:#64748b;margin-bottom:0.4rem;">
+          TMF: ${escapeHtml(tmf.name || dslTemplate.tmf_name || '?')} ·
+          ${tmf.specification ? `spec: ${escapeHtml(tmf.specification)} · ` : ''}
+          Schema: ${escapeHtml(prov.schemaStatus || '?')} ·
+          Source: ${escapeHtml((prov.sourceFiles || []).join(', ') || '?')}
+        </div>`;
+
+      // Service relationships
+      if (relationships.length) {
+        html += `<div class="dsl-meta" style="font-size:0.55rem;color:#64748b;margin-bottom:0.3rem;">
+          Service Relationships: ${relationships.map(r => {
+            const key = Object.keys(r)[0]; const v = r[key];
+            return `<code style="color:#60a5fa;">${escapeHtml(key)}</code> → ${escapeHtml(v.alias || '')}`;
+          }).join(' · ')}
+        </div>`;
+      }
+
+      // Variables
+      if (sd.variables) {
+        html += `<div class="dsl-meta" style="font-size:0.55rem;color:#64748b;margin-bottom:0.3rem;">
+          Variables: ${Object.entries(sd.variables).map(([k,v]) =>
+            `<code style="color:#94a3b8;">${escapeHtml(k)}</code>=<code style="color:#e2e8f0;">${escapeHtml(String(v))}</code>`).join(', ')}
+        </div>`;
+      }
+
+      // Lifecycle — show the full resolved supporting services from the service definition
+      if (sdSupportingServices.length) {
+        html += `<div style="margin-top:0.4rem;font-size:0.6rem;color:#a78bfa;font-weight:600;">Lifecycle · acknowledged</div>`;
+        html += `<div class="dsl-ne-list" style="margin-top:0.2rem;">`;
+
+        for (const entry of sdSupportingServices) {
+          const svcName = Object.keys(entry)[0];
+          const svcDef = entry[svcName] || {};
+          const innerServices = svcDef.supportingServices || [];
+          const chars = {};
+          for (const inner of innerServices) {
+            const sc = inner.serviceCharacteristics || {};
+            Object.assign(chars, sc);
+          }
+          const charEntries = Object.entries(chars);
+
+          html += `<div class="dsl-ne-chip" style="border-color:rgba(59,130,246,0.3);cursor:default;">
+            <span class="dsl-ne-icon">📦</span>
+            <div class="dsl-ne-info">
+              <div class="dsl-ne-name" style="color:#60a5fa;">${escapeHtml(svcName)}</div>
+              <div class="dsl-ne-wf" style="color:#64748b;">${escapeHtml(svcDef.parentToChildRelationship || 'supports')}</div>
+              ${charEntries.length ? `<div class="dsl-ne-attrs" style="color:#4ade80;">
+                ${charEntries.slice(0,8).map(([k,v]) => {
+                  const val = String(v);
+                  const color = val.startsWith('<') ? '#fbbf24' : '#4ade80';
+                  return `<code style="color:${color};">${escapeHtml(k)}=${escapeHtml(val)}</code>`;
+                }).join(' ')}
+              </div>` : ''}
+            </div>
+          </div>`;
+        }
+        html += `</div>`;
+      }
+
+      // Entity relationships
+      if (entities.length) {
+        html += `<div class="dsl-meta" style="font-size:0.55rem;color:#64748b;margin-top:0.3rem;">
+          Entities: ${entities.map(e => {
+            const key = Object.keys(e)[0]; const v = e[key];
+            return `<code style="color:#a78bfa;">${escapeHtml(key)}</code> (${escapeHtml(v.task || '')})`;
+          }).join(' · ')}
+        </div>`;
+      }
+
+      html += `</div>`;
+
+      // ── Intent DSL ──
+      const intent = dslTemplate.intent || {};
+      const svcList = intent.supporting_services || [];
+      html += `<div class="dsl-service-section" style="margin-top:0.8rem;">
+        <div class="dsl-service-title">
+          <span>Intent DSL</span>
+          <span class="dsl-domain">— operation = <span style="color:#fbbf24;">${escapeHtml(operation)}</span></span>
+        </div>`;
+
+      for (const svc of svcList) {
+        const chars = svc.characteristics || {};
+        const charEntries = Object.entries(chars);
+        html += `<div class="dsl-ne-chip" style="border-color:rgba(167,139,250,0.3);cursor:default;">
+          <span class="dsl-ne-icon">🔗</span>
+          <div class="dsl-ne-info">
+            <div class="dsl-ne-name" style="color:#a78bfa;">${escapeHtml(svc.name)}</div>
+            <div class="dsl-ne-wf" style="color:#64748b;">${escapeHtml(svc.relationship)}</div>
+            ${charEntries.length ? `<div class="dsl-ne-attrs" style="color:#4ade80;">
+              ${charEntries.map(([k,v]) => `<code>${escapeHtml(k)}</code>=<code style="color:#e2e8f0;">${escapeHtml(String(v))}</code>`).join(', ')}
+            </div>` : ''}
+          </div>
+        </div>`;
+      }
+      html += '</div>';
+
+      // ── Network Elements ──
+      html += `<div class="dsl-service-section" style="margin-top:0.8rem;">
+        <div class="dsl-service-title">
+          <span>Network Elements</span>
+          <span class="dsl-domain">— ${included} included · ${skipped} skipped</span>
+        </div>
+        <div class="dsl-ne-list">`;
+
+      for (const ne of populatedNEs) {
+        const icon = NE_ICONS[ne.name] || (ne.decision === 'SKIP' ? '⏭️' : '🔷');
+        const borderCls = ne.decision === 'SKIP' ? 'style="border-color:rgba(248,113,113,0.3);opacity:0.6;"' : '';
+        const conds = ne.conditions || [];
+        const attrs = ne.attributes || {};
+        const attrEntries = Object.entries(attrs).slice(0, 8);
+
+        html += `<div class="dsl-ne-chip" ${borderCls}>
+          <span class="dsl-ne-icon">${icon}</span>
+          <div class="dsl-ne-info">
+            <div class="dsl-ne-name">
+              ${ne.decision === 'SKIP' ? '<span style="color:#f87171;">✗</span> ' : '<span style="color:#4ade80;">✓</span> '}
+              ${escapeHtml(ne.name)}
+              ${ne.ne_id ? `<span style="font-size:0.5rem;color:#475569;margin-left:0.3rem;">${escapeHtml(ne.ne_id)}</span>` : ''}
+            </div>
+            <div class="dsl-ne-wf">↳ ${escapeHtml(ne.workflow)}</div>
+            ${attrEntries.length ? `<div class="dsl-ne-attrs">
+              ${attrEntries.map(([k,v]) => `<code style="color:#94a3b8;">${escapeHtml(k)}</code>=<code style="color:${String(v).startsWith('<')?'#fbbf24':'#4ade80'};">${escapeHtml(String(v))}</code>`).join(' · ')}
+            </div>` : ''}
+            ${conds.length ? `<div class="dsl-ne-attrs" style="color:#fbbf24;">if: ${escapeHtml(conds.join(' && '))}</div>` : ''}
+          </div>
+        </div>`;
+      }
+      html += '</div></div>';
+
+      document.getElementById('dsl-reference-content').innerHTML = html;
+    }
+
     async function loadSamples() {
       const resp = await fetch('/api/samples');
       const data = await resp.json();
@@ -360,6 +701,13 @@
       document.getElementById('final-summary').innerHTML = '';
       document.getElementById('network-elements').innerHTML = '';
       document.getElementById('pattern-analysis').innerHTML = '';
+      // Clear DSL Reference panel (prevent cross-engine leakage)
+      const dslRef = document.getElementById('dsl-reference');
+      dslRef.style.display = 'none';
+      document.getElementById('dsl-reference-content').innerHTML = '';
+      document.getElementById('dsl-reference-body').classList.remove('open');
+      document.getElementById('dsl-chevron').classList.remove('open');
+      document.getElementById('dsl-chevron').textContent = '▶';
     }
 
     async function submitRequest() {
@@ -528,10 +876,10 @@
       if (fs) {
         renderNotificationTimeline(fs);
         buildPatternAnalysis(fs);
+        renderRuntimeDSLs(fs);
         setTimeout(() => {
           document.getElementById('final-summary').innerHTML = buildSummaryHTML(data.total_ms, fs);
           if (fs.networkElements) renderNetworkElements(fs.networkElements, fs.subscriberDiff);
-          // Scroll once to bring post-trace content into view
           const notifEl = document.getElementById('notification-timeline');
           if (notifEl) notifEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }, 200);
@@ -691,6 +1039,7 @@
     }
 
     loadSamples();
+    initCacheConfig();
 
     /* --- Zoom --- */
     function openZoom(el) {
@@ -719,6 +1068,15 @@
       if (!card) return;
       if (e.target.closest('.step-header')) return;
       openZoom(card);
+    });
+    // DSL panel zoom — click a chip or a service section title
+    document.getElementById('dsl-reference').addEventListener('click', (e) => {
+      const chip = e.target.closest('.dsl-ne-chip');
+      if (chip) { openZoom(chip); return; }
+      const section = e.target.closest('.dsl-service-section');
+      if (section && e.target.closest('.dsl-service-title')) {
+        openZoom(section);
+      }
     });
     const _origClearAll = clearAll;
     clearAll = function() { _origClearAll(); closeZoom({target: document.getElementById('zoom-backdrop')}); };

@@ -1,0 +1,78 @@
+# ORCHaaS DSL — Broadband FTTH Service Definition
+# Schema: DSLServiceDefinitionSchema (configType: serviceDefinition)
+configType: serviceDefinition
+version: v1.0
+systemCode: BB-FTTH
+tmfProperties:
+  name: Fixed Broadband FTTH Service
+  description: Fiber-to-the-home broadband service with AAA authentication and bandwidth management
+  specification: "b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0"
+  tmfApi: TMF641
+  tmfApiVersion: v4.1.0
+  serviceRelationship:
+    - ont-provision:
+        alias: ONT Provisioning
+        serviceSpecification:
+          id: "c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1"
+          href: /serviceCatalog/serviceSpecification/ont-provision
+        tmfApi: TMF641
+        tmfApiVersion: v4.1.0
+    - vlan-assign:
+        alias: VLAN Assignment
+        serviceSpecification:
+          id: "d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2"
+          href: /serviceCatalog/serviceSpecification/vlan-assign
+        tmfApi: TMF641
+        tmfApiVersion: v4.1.0
+
+lifecycle:
+  acknowledged:
+    supportingServices:
+      - ont-provisioning:
+          parentToChildRelationship: supports
+          supportingServices:
+            - serviceCharacteristics:
+                ont_model: "~request.characteristic[ont_model].value"
+                vlan: "~request.characteristic[vlan].value"
+                speed_profile: "~request.characteristic[speed_profile].value"
+                dba_profile: "~request.characteristic[dba_profile].value"
+      - bng-allocation:
+          parentToChildRelationship: supports
+          supportingServices:
+            - serviceCharacteristics:
+                ip_pool: "~request.characteristic[ip_pool].value"
+                subscriber_profile: "~request.characteristic[subscriber_profile].value"
+                qos_policy: "~request.characteristic[qos_policy].value"
+      - radius-config:
+          parentToChildRelationship: supports
+          supportingServices:
+            - serviceCharacteristics:
+                nas_identifier: "~request.characteristic[nas_identifier].value"
+                shared_secret: "~request.characteristic[shared_secret].value"
+                auth_method: "~request.characteristic[auth_method].value"
+      - ems-setup:
+          parentToChildRelationship: supports
+          supportingServices:
+            - serviceCharacteristics:
+                snmp_community: "~request.characteristic[snmp_community].value"
+                trap_destinations: "~request.characteristic[trap_destinations].value"
+
+variables:
+  vlan_default: "100"
+  speed_default: 100M-20M
+
+shortcuts:
+  platinum_speed: "1000M-1000M"
+  gold_speed: "500M-100M"
+  silver_speed: "100M-20M"
+  bronze_speed: "50M-10M"
+
+outstanding:
+  feature: "+"
+  operatingState: "+"
+  serviceCharacteristics: "+"
+  state: "+"
+  networkElements: "+"
+  place: "_"
+  relatedParty: "+"
+  type: "+"

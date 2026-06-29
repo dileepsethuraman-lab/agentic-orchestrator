@@ -1,0 +1,52 @@
+# ORCHaaS DSL — Operations Mapping
+# Schema: DSLOperationSchema (configType: operation)
+configType: operation
+operation: activate
+lifecycle:
+  acknowledged:
+    supportingServices:
+      - hlr-provision:
+          parentToChildRelationship: supports
+          supportingServices:
+            - serviceCharacteristics:
+                msisdn: "~request.characteristic[msisdn].value"
+                imsi: "~request.characteristic[imsi].value"
+                subscriber_profile: "~request.characteristic[subscriber_profile].value"
+                roaming_profile: "~request.characteristic[roaming_profile].value"
+      - ims-register:
+          parentToChildRelationship: supports
+          supportingServices:
+            - serviceCharacteristics:
+                msisdn: "~request.characteristic[msisdn].value"
+                imsi: "~request.characteristic[imsi].value"
+                volte_enabled: "~request.characteristic[volte_enabled].value"
+                codec_profile: "~request.characteristic[codec_profile].value"
+      - pcrf-configure:
+          parentToChildRelationship: supports
+          supportingServices:
+            - serviceCharacteristics:
+                apn: "~request.characteristic[apn].value"
+                qos_profile: "~request.characteristic[qos_profile].value"
+                charging_rule: "~request.characteristic[charging_rule].value"
+                bandwidth_limit: "~request.characteristic[bandwidth_limit].value"
+      - smsc-provision:
+          parentToChildRelationship: supports
+          supportingServices:
+            - serviceCharacteristics:
+                routing: "~request.characteristic[routing].value"
+                validity_period: "~request.characteristic[validity_period].value"
+      - msc-provision:
+          parentToChildRelationship: supports
+          supportingServices:
+            - serviceCharacteristics:
+                msisdn: "~request.characteristic[msisdn].value"
+                imsi: "~request.characteristic[imsi].value"
+                location_area: "~request.characteristic[location_area].value"
+                tac: "~request.characteristic[tac].value"
+      - sbc-config:
+          parentToChildRelationship: supports
+          supportingServices:
+            - serviceCharacteristics:
+                sip_domain: "~request.characteristic[sip_domain].value"
+                codec_list: "~request.characteristic[codec_list].value"
+                media_handling: "~request.characteristic[media_handling].value"

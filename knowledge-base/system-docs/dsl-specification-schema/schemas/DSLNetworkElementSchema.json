@@ -1,0 +1,254 @@
+{
+  "$id" : "http://orchaas-schema-service/v1",
+  "$schema" : "http://json-schema.org/draft-07/schema#",
+  "title" : "ORCHaaS YAML DSL Operation Specification",
+  "version" : "v1.0",
+  "additionalProperties" : false,
+  "required" : [ "configType", "networkElements" ],
+  "properties" : {
+    "networkElements" : {
+      "type" : "array",
+      "items" : {
+        "type" : "object",
+        "additionalProperties" : false,
+        "properties" : {
+          "_with_" : {
+            "type" : "object",
+            "additionalProperties" : false,
+            "not" : {
+              "required" : [ "_with_" ]
+            },
+            "required" : [ "data", "as" ],
+            "properties" : {
+              "as" : {
+                "type" : "string"
+              },
+              "data" : {
+                "type" : "string"
+              }
+            }
+          }
+        },
+        "patternProperties" : {
+          "^(.*)$" : {
+            "type" : "object",
+            "additionalProperties" : false,
+            "required" : [ "prefetch" ],
+            "properties" : {
+              "prefetch" : {
+                "description" : "This defines the workflow to prefetch data for this network element",
+                "type" : "object",
+                "additionalProperties" : false,
+                "required" : [ "workflow" ],
+                "properties" : {
+                  "variables" : {
+                    "type" : "object",
+                    "additionalProperties" : true,
+                    "properties" : {
+                      "_with_" : {
+                        "type" : "object",
+                        "additionalProperties" : false,
+                        "not" : {
+                          "required" : [ "_with_" ]
+                        },
+                        "required" : [ "data", "as" ],
+                        "properties" : {
+                          "as" : {
+                            "type" : "string"
+                          },
+                          "data" : {
+                            "type" : "string"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "workflow" : {
+                    "type" : "string",
+                    "pattern" : "^workflows\\/.*\\.sw\\.ya?ml$"
+                  },
+                  "_if_" : {
+                    "oneOf" : [ {
+                      "type" : "string",
+                      "pattern" : "^~(.*)"
+                    }, {
+                      "type" : "array",
+                      "items" : {
+                        "type" : "string",
+                        "pattern" : "^~(.*)"
+                      }
+                    } ]
+                  },
+                  "_with_" : {
+                    "type" : "object",
+                    "additionalProperties" : false,
+                    "not" : {
+                      "required" : [ "_with_" ]
+                    },
+                    "required" : [ "data", "as" ],
+                    "properties" : {
+                      "as" : {
+                        "type" : "string"
+                      },
+                      "data" : {
+                        "type" : "string"
+                      }
+                    }
+                  }
+                }
+              },
+              "networkCharacteristics" : {
+                "type" : "object",
+                "additionalProperties" : true,
+                "properties" : {
+                  "_for_" : {
+                    "type" : "object",
+                    "additionalProperties" : false,
+                    "required" : [ "each", "as", "keys" ],
+                    "properties" : {
+                      "as" : {
+                        "type" : "string"
+                      },
+                      "keys" : {
+                        "type" : "array",
+                        "items" : {
+                          "type" : "string"
+                        }
+                      },
+                      "each" : {
+                        "type" : "string",
+                        "pattern" : "^~(.*)"
+                      },
+                      "_with_" : {
+                        "type" : "object",
+                        "additionalProperties" : false,
+                        "not" : {
+                          "required" : [ "_with_" ]
+                        },
+                        "required" : [ "data", "as" ],
+                        "properties" : {
+                          "as" : {
+                            "type" : "string"
+                          },
+                          "data" : {
+                            "type" : "string"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "_with_" : {
+                    "type" : "object",
+                    "additionalProperties" : false,
+                    "not" : {
+                      "required" : [ "_with_" ]
+                    },
+                    "required" : [ "data", "as" ],
+                    "properties" : {
+                      "as" : {
+                        "type" : "string"
+                      },
+                      "data" : {
+                        "type" : "string"
+                      }
+                    }
+                  }
+                }
+              },
+              "id" : {
+                "type" : "string"
+              },
+              "state" : {
+                "type" : "string"
+              },
+              "_if_" : {
+                "oneOf" : [ {
+                  "type" : "string",
+                  "pattern" : "^~(.*)"
+                }, {
+                  "type" : "array",
+                  "items" : {
+                    "type" : "string",
+                    "pattern" : "^~(.*)"
+                  }
+                } ]
+              },
+              "_for_" : {
+                "type" : "object",
+                "additionalProperties" : false,
+                "required" : [ "each", "as", "keys" ],
+                "properties" : {
+                  "as" : {
+                    "type" : "string"
+                  },
+                  "keys" : {
+                    "type" : "array",
+                    "items" : {
+                      "type" : "string"
+                    }
+                  },
+                  "each" : {
+                    "type" : "string",
+                    "pattern" : "^~(.*)"
+                  },
+                  "_with_" : {
+                    "type" : "object",
+                    "additionalProperties" : false,
+                    "not" : {
+                      "required" : [ "_with_" ]
+                    },
+                    "required" : [ "data", "as" ],
+                    "properties" : {
+                      "as" : {
+                        "type" : "string"
+                      },
+                      "data" : {
+                        "type" : "string"
+                      }
+                    }
+                  }
+                }
+              },
+              "_with_" : {
+                "type" : "object",
+                "additionalProperties" : false,
+                "not" : {
+                  "required" : [ "_with_" ]
+                },
+                "required" : [ "data", "as" ],
+                "properties" : {
+                  "as" : {
+                    "type" : "string"
+                  },
+                  "data" : {
+                    "type" : "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "configType" : {
+      "type" : "string",
+      "const" : "networkElements"
+    },
+    "_with_" : {
+      "type" : "object",
+      "additionalProperties" : false,
+      "not" : {
+        "required" : [ "_with_" ]
+      },
+      "required" : [ "data", "as" ],
+      "properties" : {
+        "as" : {
+          "type" : "string"
+        },
+        "data" : {
+          "type" : "string"
+        }
+      }
+    }
+  }
+}

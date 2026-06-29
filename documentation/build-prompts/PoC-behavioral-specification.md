@@ -14,7 +14,7 @@ A **cache-first, data-sovereign telecom service orchestration engine** with the 
 |---------------|-------------|
 | **Multi-format Ingress** | Accepts TMF640 Service Activation JSON, TMF641 Service Order JSON, AND unstructured natural language text (e.g., "activate new mobile service for retail customer with gold SLA") |
 | **Async Pipeline** | Every request flows through a multi-stage pipeline. Early stages return synchronously; compute-intensive stages run asynchronously. A polling endpoint lets clients retrieve results. |
-| **Cache-First** | Before invoking any LLM, the system checks a pattern store for a matching orchestration pattern. A cache HIT skips the LLM entirely (0ms AI latency). A MISS invokes reasoning, then persists the result for future hits. |
+| **Cache-First** | Before invoking any LLM, the system checks a cache store for a matching orchestration plan. Two cache engines are available: (1) **Pattern Store** — auto-learning RDF-inspired graph store with Jaccard similarity matching; (2) **DSL Store** — deterministic YAML template engine with domain-expert-authored specifications. A toggle in the UI switches between them at runtime. A cache HIT skips the LLM entirely (0ms AI latency). A MISS invokes reasoning, then persists the result for future hits. |
 | **KB-Driven** | All network element definitions, required attributes, workflow names, and lifecycle state machines derive from a structured knowledge base — never from hardcoded lists. |
 | **Data Sovereignty** | All sensitive identifiers (phone numbers, IMSI, IP addresses, hostnames) are replaced with anonymous tokens BEFORE any data leaves the local perimeter for cloud AI. The token-to-real mapping exists only in transient memory and is never persisted or transmitted. |
 | **Pattern Learning** | Successful orchestrations are persisted as RDF-inspired graphs of triples (subject, predicate, object). Future requests are matched using Jaccard similarity on service-defining characteristics. |
@@ -200,6 +200,96 @@ On system startup, the knowledge base service definitions MUST be used to pre-po
 1. For each service type, use the KB's required resources to build a skeleton plan with device names, workflow mappings, and attribute placeholders (`"<attribute_name>"`).
 2. Learn this plan as a KB-seeded pattern with empty characteristics (matches any request at 0.25 confidence).
 3. This ensures even the first-ever request for a service type hits the cache and receives KB-correct attribute names.
+
+### 2.7b DSL Cache Engine (Alternative Cache)
+
+The system MUST support a second cache engine mode — the **DSL Cache** — based on YAML-defined service specification templates. This operates as a **toggle-able alternative** to the Pattern Store.
+
+#### 2.7b.1 DSL Cache Identity
+
+The DSL cache is a **deterministic template engine**, not a probabilistic matcher:
+- If a DSL definition exists for the service type → ALWAYS produces a plan (cache HIT)
+- If no DSL definition → falls back to LLM (cache MISS)
+- DSL definitions are **static YAML files** authored by domain experts — they are not auto-learned
+- The confidence is always 1.0 (authoritative specification)
+
+#### 2.7b.2 DSL Definitions
+
+Each service type has a set of YAML DSL files under `knowledge-base/dsl-definitions/`:
+
+| File | Schema (configType) | Purpose |
+|------|--------------------|---------|
+| `{svc}.yaml` | `serviceDefinition` | Top-level service with TMF properties, lifecycle, entity relationships |
+| `{svc}-ne.yaml` | `networkElements` | Network element definitions with prefetch workflows and characteristics |
+| `operations.yaml` | `operation` | Operation mappings (activate, modify, etc.) with supporting services |
+| `consumer-errors.yaml` | `consumerErrors` | Error handling per lifecycle state |
+| `dsl-index.yaml` | (index) | Maps each service type to its constituent DSL files |
+
+#### 2.7b.3 DSL Matching Algorithm
+
+When the DSL engine is selected:
+
+1. Load all DSL YAML files from `knowledge-base/dsl-definitions/` (lazy on first use).
+2. Match the detected service type against the DSL index.
+3. If a DSL definition exists for the service type:
+   - Read the network elements definition.
+   - For each NE, extract the workflow name and attribute list.
+   - Evaluate any `_if_` conditions (e.g., `volte_enabled == 'true'`) to skip NEs when appropriate.
+   - Resolve attribute values from the request's characteristics dictionary.
+   - Produce a deterministic plan: `{workflows, params, devices}`.
+4. If no DSL definition exists, treat as MISS → fall through to LLM.
+
+#### 2.7b.4 Cache Engine Toggle
+
+The system MUST provide an API endpoint to switch between cache engines at runtime:
+
+- `GET /api/config/cache` — returns current engine, available engines, DSL status
+- `POST /api/config/cache` with `{"engine": "pattern"|"dsl"}` — switches the engine
+
+The web UI MUST render a toggle in the header showing "Pattern" / "DSL" with visual indication of which engine is active. Switching is immediate — the next request uses the newly selected engine.
+
+**Cache Isolation Requirement**: The two cache engines MUST be fully isolated at every layer:
+
+| Layer | Requirement |
+|-------|------------|
+| **API** | `GET /api/config/cache` MUST return `dslLoaded: false, dslDefinitions: []` when engine is `"pattern"`. DSL metadata is only valid when `engine === "dsl"`. |
+| **Frontend** | The `clearAll()` function MUST hide and clear the DSL Reference panel. The `renderRuntimeDSLs()` function MUST hide the DSL panel before returning early when `patternMatch.result !== "DSL"`. |
+| **Runtime** | The Pattern Store and DSL Store MUST never cross-read. The `engine` selector routes exclusively to one store or the other. |
+| **Java PoC** | The `GET /api/config/cache` endpoint in the Spring Boot controller MUST apply the same engine-gated isolation (only return DSL metadata when `currentEngine === "dsl"`). |
+
+#### 2.7b.5 Trace Card Differences
+
+When the DSL engine is active, the CACHE trace step differs:
+
+- **DSL HIT**: Title: "DSL Cache — {domain} ✓", color: green, icon: 📋
+  - Reports: N device count, N workflows, N params, cascaded count
+  - Shows: "0ms LLM latency — DSL is the plan."
+- **DSL MISS**: Title: "DSL Cache — MISS (Empty Plan)", color: amber
+  - Falls back to LLM (same as Pattern Store miss)
+
+The `patternMatch` field in the final state uses:
+- `result: "DSL"` instead of `"HIT"`/`"MISS"`
+- `confidence: 1.0` (authoritative)
+- `compareLogic: "DSL template — deterministic mapping (no Jaccard matching)"`
+
+#### 2.7b.6 DSL Plan Structure
+
+A DSL-derived plan has the same structure as a pattern-derived plan:
+```json
+{
+  "workflows": ["HLR_Provisioning", "IMS_Registration", "APN_Configuration", ...],
+  "params": {
+    "subscriber_profile": "Gold_VoLTE_IntlRoam",
+    "roaming_profile": "WorldZone1",
+    "volte_enabled": "true",
+    "codec_profile": "EVS_AMR-WB",
+    ...
+  },
+  "devices": ["HLR-HSS", "IMS-Core", "PCRF-PCF", "SMSC", "MSC-MME", "SBC"]
+}
+```
+
+This ensures downstream stages (HYDRATE, MERGE, EXECUTE, VERIFY) work identically regardless of which cache engine produced the plan.
 
 ### 2.8 Knowledge Base Context Loading (STAGE 3 — RAG)
 

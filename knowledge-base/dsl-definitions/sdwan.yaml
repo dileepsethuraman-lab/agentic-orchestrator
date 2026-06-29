@@ -1,0 +1,63 @@
+# ORCHaaS DSL — SD-WAN Service Definition
+# Schema: DSLServiceDefinitionSchema (configType: serviceDefinition)
+configType: serviceDefinition
+version: v1.0
+systemCode: SDWAN-ENT
+tmfProperties:
+  name: SD-WAN Overlay Service
+  description: Software-defined WAN overlay with multi-transport path selection and application-aware routing
+  specification: "b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9"
+  tmfApi: TMF640
+  tmfApiVersion: v4.1.0
+  serviceRelationship:
+    - edge-deployment:
+        alias: Edge CPE Deployment
+        serviceSpecification:
+          id: "c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0"
+          href: /serviceCatalog/serviceSpecification/edge-deployment
+        tmfApi: TMF640
+        tmfApiVersion: v4.1.0
+
+lifecycle:
+  acknowledged:
+    supportingServices:
+      - cpe-deployment:
+          parentToChildRelationship: supports
+          supportingServices:
+            - serviceCharacteristics:
+                transport_links: "~request.characteristic[transport_links].value"
+                encryption: "~request.characteristic[encryption].value"
+                app_policy: "~request.characteristic[app_policy].value"
+                wan_interfaces: "~request.characteristic[wan_interfaces].value"
+      - controller-setup:
+          parentToChildRelationship: supports
+          supportingServices:
+            - serviceCharacteristics:
+                policy_set: "~request.characteristic[policy_set].value"
+                site_list: "~request.characteristic[site_list].value"
+                template: "~request.characteristic[template].value"
+      - ztp-bootstrap:
+          parentToChildRelationship: creates
+          supportingServices:
+            - serviceCharacteristics:
+                ztp_url: "~request.characteristic[ztp_url].value"
+                bootstrap_config: "~request.characteristic[bootstrap_config].value"
+                license_key: "~request.characteristic[license_key].value"
+
+variables:
+  encryption_default: IPSec-AES256-GCM
+
+shortcuts:
+  platinum_policy: Platinum-APAC-v3
+  gold_policy: Gold-EMEA-v2
+  silver_policy: Silver-AMER-v1
+
+outstanding:
+  feature: "+"
+  operatingState: "+"
+  serviceCharacteristics: "+"
+  state: "+"
+  networkElements: "+"
+  place: "_"
+  relatedParty: "+"
+  type: "+"

@@ -1,0 +1,34 @@
+# ORCHaaS DSL — Service-to-DSL Index
+# Maps each service type to its constituent DSL definition files.
+# The DSL engine loads these at startup and uses them to construct
+# deterministic orchestration plans without calling the cloud LLM.
+
+dsl_index:
+  mobile:
+    service_definition: mobile-voice.yaml
+    network_elements: mobile-ne.yaml
+    operations: operations.yaml
+    consumer_errors: consumer-errors.yaml
+    domain: Voice / Mobile Core
+    detection_keywords: [mobile, msisdn, sim, activate, voice, sms, volte]
+  l3vpn:
+    service_definition: l3vpn.yaml
+    network_elements: l3vpn-ne.yaml
+    operations: operations.yaml
+    consumer_errors: consumer-errors.yaml
+    domain: MPLS L3VPN
+    detection_keywords: [l3vpn, mpls, vpn, bgp, vrf, pe_router]
+  sdwan:
+    service_definition: sdwan.yaml
+    network_elements: sdwan-ne.yaml
+    operations: operations.yaml
+    consumer_errors: consumer-errors.yaml
+    domain: SD-WAN Overlay
+    detection_keywords: [sd-wan, sdwan, sd wan, sdwan, cpe, sdwan_controller]
+  broadband:
+    service_definition: broadband.yaml
+    network_elements: broadband-ne.yaml
+    operations: operations.yaml
+    consumer_errors: consumer-errors.yaml
+    domain: Fixed Broadband
+    detection_keywords: [broadband, ftth, fiber, ont, olt, ftth]

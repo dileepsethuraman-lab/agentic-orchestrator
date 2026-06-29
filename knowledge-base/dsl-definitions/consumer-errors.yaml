@@ -1,0 +1,54 @@
+# ORCHaaS DSL — Consumer Error Definitions
+# Schema: DSLConsumerErrorSchema (configType: consumerErrors)
+configType: consumerErrors
+errors:
+  acknowledged:
+    - error:
+        code: DSL-MOB-001
+        reason: Missing mandatory attribute
+        message: "Provisioning failed: msisdn or imsi missing from request characteristics"
+        category: validation
+        httpCode: 400
+        source: orchestrator
+      _if_:
+        - "~request.characteristic[msisdn].value == null"
+        - "~request.characteristic[imsi].value == null"
+    - error:
+        code: DSL-MOB-002
+        reason: Customer segment not recognized
+        message: "Unknown customer segment: ~request.characteristic[customerSegment].value"
+        category: business
+        httpCode: 422
+        source: orchestrator
+      _if_:
+        - "~request.characteristic[customerSegment].value not in ['retail','enterprise','wholesale']"
+  inProgress:
+    - error:
+        code: DSL-MOB-003
+        reason: HLR provisioning timeout
+        message: "HLR subsystem did not respond within timeout"
+        category: timeout
+        httpCode: 504
+        source: HLR
+      _if_:
+        - "~response.hlr.status == 'timeout'"
+  rejected:
+    - error:
+        code: DSL-MOB-004
+        reason: Subscriber already exists
+        message: "MSISDN ~request.characteristic[msisdn].value already provisioned"
+        category: conflict
+        httpCode: 409
+        source: HLR
+      _if_:
+        - "~response.hlr.status == 'duplicate'"
+  completed:
+    - error:
+        code: DSL-MOB-005
+        reason: Verification failed
+        message: "Post-provisioning verification returned inconsistent state"
+        category: inconsistency
+        httpCode: 500
+        source: orchestrator
+      _if_:
+        - "~verification.status == 'failed'"

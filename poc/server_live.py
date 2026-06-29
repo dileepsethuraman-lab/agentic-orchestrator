@@ -5,7 +5,7 @@ Real services: diskcache (Redis-compatible pattern store) + Hermes/Deepseek for 
 Web UI served on 0.0.0.0:8090.
 """
 
-import uuid, time, json, re, subprocess, hashlib, logging, shutil, threading
+import uuid, time, json, re, subprocess, hashlib, logging, shutil, threading, os
 from typing import Optional
 from concurrent.futures import ThreadPoolExecutor
 
@@ -665,6 +665,654 @@ class PatternEngine:
 patterns = PatternEngine(cache)
 
 
+# ====================================================================
+# DSL Engine — YAML-defined deterministic service orchestration
+# ====================================================================
+# The DSL cache provides static, explicitly-authored orchestration
+# templates as an alternative to the auto-learning Pattern Engine.
+# Each service (mobile, l3vpn, sdwan, broadband) has YAML DSL files
+# under knowledge-base/dsl-definitions/ that define:
+#   - Service definition (TMF properties, lifecycle, relationships)
+#   - Network elements (devices, prefetch workflows, attributes)
+#   - Operations (activate, modify, etc. with supporting services)
+#   - Consumer errors (error codes per lifecycle state)
+#
+# DSL expressions use ~path syntax to reference request characteristics:
+#   ~request.characteristic[msisdn].value  → "447700123456"
+#   ~request.characteristic[apn].value     → "ims.gold.mnc015.mcc234.gprs"
+#
+# When selected, the DSL engine ALWAYS returns a plan for any known
+# service type — it is a deterministic template engine, not a
+# probabilistic matcher.
+
+import yaml
+import jsonschema
+
+# ── DSL Schema Validation ────────────────────────────────────────
+# Schemas live under knowledge-base/system-docs/dsl-specification-schema/schemas/
+# Each schema defines a configType const that maps to the DSL YAML configType field.
+# The DSLEngine loads schemas once at startup and validates every YAML file on load.
+
+
+def _load_dsl_schemas() -> dict[str, dict]:
+    """Load all DSL JSON schemas from the schema directory.
+
+    Returns a dict mapping configType const → (schema, filename).
+    Called once at DSLEngine startup.
+    """
+    schemas = {}
+    schema_dir = os.path.join(KB_DIR, "system-docs/dsl-specification-schema/schemas")
+    if not os.path.isdir(schema_dir):
+        logger.warning("DSL schema directory not found: %s", schema_dir)
+        return schemas
+
+    for fname in os.listdir(schema_dir):
+        if not fname.endswith(".json"):
+            continue
+        path = os.path.join(schema_dir, fname)
+        try:
+            with open(path) as f:
+                schema = json.load(f)
+            ct = schema.get("properties", {}).get("configType", {}).get("const")
+            if ct:
+                schemas[ct] = {"schema": schema, "filename": fname,
+                               "required": schema.get("required", []),
+                               "title": schema.get("title", fname)}
+                logger.debug("DSL schema: %s → %s (%s)", ct, fname,
+                            schema.get("title", ""))
+        except Exception as e:
+            logger.error("DSL: failed to load schema %s: %s", fname, e)
+
+    logger.info("DSL: loaded %d schemas (%s)",
+               len(schemas), ", ".join(schemas.keys()))
+    return schemas
+
+
+class DSLEngine:
+    """YAML DSL-based deterministic service orchestration engine.
+
+    Loads DSL definitions from knowledge-base/dsl-definitions/ at startup
+    and validates every YAML file against its JSON Schema from
+    knowledge-base/system-docs/dsl-specification-schema/schemas/.
+
+    On lookup, constructs an orchestration plan by resolving ~expression
+    references against request characteristics.  Tracks _if_ condition
+    evaluation per NE and reports provenance (template file, version,
+    schema validation status) in the patternMatch output.
+    """
+
+    INSTANCE_ATTRS = {"msisdn", "imsi", "imei", "pe_ip", "hostname",
+                       "serviceid", "serial", "loopback", "management_ip"}
+
+    # ~expression regex: ~path.to.value
+    DYN_EXPR = re.compile(r'^~(.*)$')
+
+    def __init__(self, dsl_dir: str = None):
+        self._dsl_dir = dsl_dir or f"{KB_DIR}/dsl-definitions"
+        self._definitions: dict[str, dict] = {}  # svc → merged DSL
+        self._loaded = False
+        self._schemas: dict[str, dict] = {}  # configType → {schema, filename, ...}
+        self._validation_log: list[dict] = []  # load-time validation issues
+
+    # ── LOAD ──────────────────────────────────────────────
+
+    def load(self) -> dict[str, dict]:
+        """Load and index all DSL YAML files with schema validation.
+
+        Returns the loaded definitions.
+        """
+        if self._loaded:
+            return self._definitions
+
+        # Step 1: Load JSON schemas
+        self._schemas = _load_dsl_schemas()
+        self._validation_log.clear()
+
+        # Step 2: Load the DSL index
+        index_path = f"{self._dsl_dir}/dsl-index.yaml"
+        try:
+            with open(index_path) as f:
+                idx = yaml.safe_load(f)
+        except Exception as e:
+            logger.error("DSL: failed to load index %s: %s", index_path, e)
+            return {}
+
+        dsl_index = idx.get("dsl_index", {}) if idx else {}
+
+        for svc, files in dsl_index.items():
+            definition = {
+                "service_type": svc,
+                "domain": files.get("domain", ""),
+                "detection_keywords": files.get("detection_keywords", []),
+                "service_definition": None,
+                "network_elements": [],
+                "operations": None,
+                "consumer_errors": None,
+                "_provenance": {},  # per-file metadata
+            }
+
+            # Load service definition
+            sd_file = files.get("service_definition")
+            if sd_file:
+                sd = self._load_yaml_validated(f"{self._dsl_dir}/{sd_file}")
+                if sd:
+                    definition["service_definition"] = sd
+
+            # Load network elements
+            ne_file = files.get("network_elements")
+            if ne_file:
+                ne_data = self._load_yaml_validated(f"{self._dsl_dir}/{ne_file}")
+                if ne_data:
+                    nes = ne_data.get("network_elements", ne_data.get("networkElements", []))
+                    parsed = []
+                    for entry in nes:
+                        for name, spec in entry.items():
+                            prefetch = spec.get("prefetch", {})
+                            net_chars = spec.get("networkCharacteristics", {})
+                            # Merge NE-level _if_ with prefetch-level _if_
+                            ne_conditions = list(spec.get("_if_", []))
+                            prefetch_conditions = prefetch.get("_if_", [])
+                            if isinstance(prefetch_conditions, str):
+                                prefetch_conditions = [prefetch_conditions]
+                            all_conditions = ne_conditions + prefetch_conditions
+                            parsed.append({
+                                "name": name,
+                                "workflow": prefetch.get("workflow", f"{name}_Config").split("/")[-1].replace(".sw.yaml", ""),
+                                "id": spec.get("id", f"{name}-01"),
+                                "state": spec.get("state", "active"),
+                                "attributes": [k for k in net_chars.keys()
+                                              if not k.startswith("_")],
+                                "conditions": all_conditions,
+                                "_source_file": ne_file,
+                            })
+                    definition["network_elements"] = parsed
+
+            # Load operations
+            ops_file = files.get("operations")
+            if ops_file:
+                ops = self._load_yaml_validated(f"{self._dsl_dir}/{ops_file}")
+                if ops:
+                    definition["operations"] = ops
+
+            # Load consumer errors
+            ce_file = files.get("consumer_errors")
+            if ce_file:
+                ce = self._load_yaml_validated(f"{self._dsl_dir}/{ce_file}")
+                if ce:
+                    definition["consumer_errors"] = ce
+
+            self._definitions[svc] = definition
+            logger.info("DSL: loaded %s → %d NEs (%s)",
+                       svc, len(definition["network_elements"]),
+                       ", ".join(n["name"] for n in definition["network_elements"]))
+
+        # Step 3: Report validation summary
+        if self._validation_log:
+            issues_by_file = {}
+            for entry in self._validation_log:
+                f = entry.get("file", "?")
+                issues_by_file.setdefault(f, []).append(entry)
+            for fpath, issues in issues_by_file.items():
+                logger.warning("DSL validation: %s — %d issue(s): %s",
+                              os.path.basename(fpath), len(issues),
+                              "; ".join(i.get("message", "?")[:80] for i in issues[:3]))
+        else:
+            logger.info("DSL: all YAML files passed schema validation ✓")
+
+        self._loaded = True
+        return self._definitions
+
+    def _load_yaml_validated(self, path: str) -> dict | None:
+        """Load a YAML file and validate against its JSON Schema.
+
+        Validation is advisory — failures are logged but the YAML is still
+        returned so the engine can operate with partially-valid data.
+        """
+        try:
+            with open(path) as f:
+                data = yaml.safe_load(f)
+        except Exception as e:
+            logger.error("DSL: failed to load %s: %s", path, e)
+            self._validation_log.append({
+                "file": path, "severity": "error",
+                "message": f"YAML parse failed: {e}",
+            })
+            return None
+
+        if not isinstance(data, dict):
+            logger.error("DSL: %s is not a mapping", path)
+            return None
+
+        # Determine expected configType and schema
+        ct = data.get("configType", "")
+        schema_info = self._schemas.get(ct)
+
+        if not schema_info:
+            issue = f"Unknown configType '{ct}' — no matching schema loaded"
+            logger.warning("DSL: %s — %s", os.path.basename(path), issue)
+            self._validation_log.append({
+                "file": path, "severity": "warning",
+                "message": issue,
+            })
+            return data  # return anyway — best-effort
+
+        # Validate required fields
+        required = schema_info.get("required", [])
+        missing = [r for r in required if r not in data]
+        if missing:
+            issue = f"Missing required fields: {missing}"
+            logger.warning("DSL: %s — %s (schema: %s)",
+                          os.path.basename(path), issue, schema_info["filename"])
+            self._validation_log.append({
+                "file": path, "severity": "warning",
+                "message": issue,
+                "schema": schema_info["filename"],
+            })
+
+        # Full JSON Schema validation
+        try:
+            jsonschema.validate(instance=data, schema=schema_info["schema"])
+        except jsonschema.ValidationError as e:
+            issue = f"Schema violation: {e.message}"[:120]
+            logger.warning("DSL: %s — %s (at %s)",
+                          os.path.basename(path), issue, " → ".join(str(p) for p in e.absolute_path))
+            self._validation_log.append({
+                "file": path, "severity": "warning",
+                "message": issue,
+                "schema_path": " → ".join(str(p) for p in e.absolute_path),
+                "schema": schema_info["filename"],
+            })
+        except jsonschema.SchemaError as e:
+            logger.error("DSL: schema %s is invalid: %s", schema_info["filename"], e)
+
+        return data
+
+    # ── QUERY ──────────────────────────────────────────────
+
+    def lookup(self, service_type: str, characteristics: dict,
+               operation: str = "activate") -> dict | None:
+        """Populate the DSL templates against the request.
+
+        DSL architecture (from schemas):
+          1. Service DSL — master template that flattens the incoming request
+             by resolving all ~request.characteristic[key].value references.
+          2. Intent DSL (operations.yaml) — per-operation mapping of
+             supporting services, each with parentToChildRelationship
+             (supports/relatesTo/creates) and service characteristics.
+          3. Network Elements — reference data defining physical/virtual NEs,
+             each with a prefetch.workflow (CNCF Serverless Workflow .sw.yaml)
+             and network characteristics.
+
+        The connection between supporting services and NEs comes from telecom
+        domain knowledge — not from an invented matching algorithm.
+
+        Returns a DSL template dict with populated service definition,
+        intent mapping, and NE references.
+        """
+        if not self._loaded:
+            self.load()
+
+        dsl = self._definitions.get(service_type)
+        if not dsl:
+            logger.info("DSL: no definition for service=%s", service_type)
+            return None
+
+        # ── Populate Service DSL ──
+        sd = dsl.get("service_definition") or {}
+        populated_sd = self._resolve_template(
+            sd, characteristics, operation,
+            exclude_keys={"configType", "version", "systemCode", "tmfProperties"}
+        ) if sd else {}
+
+        # Extract TMF metadata
+        tmf = sd.get("tmfProperties", {}) if sd else {}
+        system_code = sd.get("systemCode", service_type)
+        version = sd.get("version", "?")
+
+        # ── Populate Intent DSL ──
+        ops_dsl = dsl.get("operations") or {}
+        intent = self._populate_intent(ops_dsl, characteristics, operation)
+
+        # ── NE reference data ──
+        nes = dsl.get("network_elements", [])
+        # Include all NEs with resolved characteristics (no matching/filtering)
+        populated_nes = []
+        for ne in nes:
+            ne_name = ne["name"]
+            ne_workflow = ne.get("workflow", "")
+            ne_attrs = ne.get("attributes", [])
+            conditions = ne.get("conditions", [])
+            source_file = ne.get("_source_file", "")
+
+            # Check _if_ conditions
+            decision = "INCLUDE"
+            skip_reason = None
+            if conditions:
+                if not self._eval_conditions(conditions, characteristics, operation=operation):
+                    decision = "SKIP"
+                    skip_reason = "Condition(s) not met"
+
+            # Resolve NE attributes from request characteristics
+            resolved_attrs = {}
+            for attr in ne_attrs:
+                val = characteristics.get(attr)
+                if val is not None and not str(val).startswith("default_"):
+                    resolved_attrs[attr] = val
+                else:
+                    resolved_attrs[attr] = f"<{attr}>"
+
+            populated_nes.append({
+                "name": ne_name,
+                "workflow": ne_workflow,
+                "decision": decision,
+                "skip_reason": skip_reason,
+                "conditions": list(conditions),
+                "attributes": resolved_attrs,
+                "ne_id": ne.get("id", ""),
+                "state": ne.get("state", "active"),
+                "source_file": source_file,
+            })
+
+        # Build the populated DSL plan
+        included_nes = [n for n in populated_nes if n["decision"] == "INCLUDE"]
+        skipped_nes = [n for n in populated_nes if n["decision"] == "SKIP"]
+
+        plan = {
+            "workflows": [n["workflow"] for n in included_nes],
+            "params": {k: v for n in included_nes for k, v in n["attributes"].items()},
+            "devices": [n["name"] for n in included_nes],
+            "_dsl_template": {
+                "service_type": service_type,
+                "operation": operation,
+                "system_code": system_code,
+                "version": version,
+                "tmf_name": tmf.get("name", ""),
+                "tmf_description": tmf.get("description", ""),
+                "populated_service_definition": populated_sd,
+                "intent": intent,
+                "network_elements": populated_nes,
+            },
+        }
+        logger.info("DSL: populated template for %s/%s → %d NEs included, %d skipped",
+                   service_type, operation, len(included_nes), len(skipped_nes))
+        return plan
+
+    def _populate_intent(self, ops_dsl: dict, characteristics: dict,
+                         operation: str) -> dict:
+        """Extract and populate the Intent DSL for a given operation."""
+        lifecycle = ops_dsl.get("lifecycle", {}) or {}
+        ack = lifecycle.get("acknowledged", {}) or {}
+        op_services = ack.get("supportingServices", [])
+
+        intent = {
+            "operation": operation,
+            "lifecycle_stage": "acknowledged",
+            "supporting_services": [],
+        }
+
+        for entry in op_services:
+            if not isinstance(entry, dict):
+                continue
+            for svc_name, svc_def in entry.items():
+                relationship = svc_def.get("parentToChildRelationship", "supports")
+                inner_services = svc_def.get("supportingServices", [])
+                resolved_chars = {}
+                for inner in inner_services:
+                    sc = inner.get("serviceCharacteristics", {})
+                    for attr, expr in sc.items():
+                        if attr.startswith("_"):
+                            continue
+                        resolved = self._resolve_expr_value(
+                            str(expr), characteristics)
+                        resolved_chars[attr] = resolved
+
+                intent["supporting_services"].append({
+                    "name": svc_name,
+                    "relationship": relationship,
+                    "characteristics": resolved_chars,
+                })
+
+        return intent
+
+    def _resolve_template(self, template: dict, chars: dict,
+                          operation: str,
+                          exclude_keys: set = None) -> dict:
+        """Recursively resolve ~expressions in a template dict."""
+        if exclude_keys is None:
+            exclude_keys = set()
+        result = {}
+
+        # Top-level: include metadata keys that carry template provenance
+        for key in ("configType", "version", "systemCode"):
+            if key in template:
+                result[key] = template[key]
+
+        # Resolve tmfProperties (keep structure, resolve ~expressions in values)
+        tmf = template.get("tmfProperties", {})
+        if tmf:
+            result["tmfProperties"] = self._resolve_dict_values(
+                tmf, chars, exclude_keys={"configType"})
+
+        # Resolve lifecycle
+        lc = template.get("lifecycle", {})
+        if lc:
+            result["lifecycle"] = self._resolve_dict_values(
+                lc, chars, exclude_keys={"configType"})
+
+        # Resolve variables (substitute ~expressions)
+        vars_dict = template.get("variables", {})
+        if vars_dict:
+            result["variables"] = {}
+            for k, v in vars_dict.items():
+                if isinstance(v, str) and v.startswith("~"):
+                    result["variables"][k] = self._resolve_expr_value(v, chars)
+                else:
+                    result["variables"][k] = v
+
+        # Resolve shortcuts
+        shortcuts = template.get("shortcuts", {})
+        if shortcuts:
+            result["shortcuts"] = shortcuts
+
+        # Resolve outstanding
+        outstanding = template.get("outstanding", {})
+        if outstanding:
+            result["outstanding"] = self._resolve_dict_values(
+                outstanding, chars, exclude_keys={"configType"})
+
+        # Preserve entityRelationship, serviceRelationship as-is
+        for rel_key in ("entityRelationship", "serviceRelationship"):
+            if rel_key in template:
+                result[rel_key] = template[rel_key]
+
+        return result
+
+    def _resolve_dict_values(self, d: dict, chars: dict,
+                             exclude_keys: set = None) -> dict:
+        """Recursively resolve ~expressions in dict values."""
+        if exclude_keys is None:
+            exclude_keys = set()
+        result = {}
+        for k, v in d.items():
+            if k.startswith("_") or k in exclude_keys:
+                result[k] = v
+            elif isinstance(v, dict):
+                result[k] = self._resolve_dict_values(v, chars, exclude_keys)
+            elif isinstance(v, list):
+                result[k] = [
+                    self._resolve_dict_values(item, chars, exclude_keys)
+                    if isinstance(item, dict)
+                    else (self._resolve_expr_value(str(item), chars)
+                          if isinstance(item, str) and item.startswith("~")
+                          else item)
+                    for item in v
+                ]
+            elif isinstance(v, str) and v.startswith("~"):
+                result[k] = self._resolve_expr_value(v, chars)
+            else:
+                result[k] = v
+        return result
+
+    def _resolve_expr_value(self, expr: str, chars: dict) -> str:
+        """Resolve a single ~request.characteristic[key].value expression."""
+        m = re.match(r"~request\.characteristic\[(\w+)\]\.value", expr)
+        if m:
+            attr = m.group(1)
+            val = chars.get(attr, "")
+            if val is not None and str(val) != "" and not str(val).startswith("default_"):
+                return str(val)
+            return f"<{attr}>"  # unresolved placeholder
+        return expr  # not a recognized expression, return as-is
+
+    def _eval_conditions(self, conditions: list, chars: dict,
+                          operation: str = "activate") -> bool:
+        """Evaluate DSL _if_ conditions against request context.
+
+        Supports expressions:
+          ~request.characteristic[key].value == 'val'
+          ~request.characteristic[key].value != 'val'
+          ~request.action == 'activate'
+          ~request.operation == 'activate'
+
+        All conditions must pass (AND logic).
+        """
+        for cond in conditions:
+            cond = str(cond)
+            # ── ~request.action == 'value' ──
+            m = re.match(r"~request\.action\s*==\s*['\"](.+)['\"]", cond)
+            if m:
+                if operation != m.group(1):
+                    return False
+                continue
+            m = re.match(r"~request\.action\s*!=\s*['\"](.+)['\"]", cond)
+            if m:
+                if operation == m.group(1):
+                    return False
+                continue
+            m = re.match(r"~request\.operation\s*==\s*['\"](.+)['\"]", cond)
+            if m:
+                if operation != m.group(1):
+                    return False
+                continue
+            m = re.match(r"~request\.operation\s*!=\s*['\"](.+)['\"]", cond)
+            if m:
+                if operation == m.group(1):
+                    return False
+                continue
+
+            # ── ~request.characteristic[key].value == 'value' ──
+            m = re.match(r"~request\.characteristic\[(\w+)\]\.value\s*==\s*['\"](.+)['\"]", cond)
+            if m:
+                attr, expected = m.group(1), m.group(2)
+                actual = str(chars.get(attr, ""))
+                if actual != expected:
+                    return False
+                continue
+            m = re.match(r"~request\.characteristic\[(\w+)\]\.value\s*!=\s*['\"](.+)['\"]", cond)
+            if m:
+                attr, not_expected = m.group(1), m.group(2)
+                actual = str(chars.get(attr, ""))
+                if actual == not_expected:
+                    return False
+                continue
+        return True
+
+    # ── EXPRESSION RESOLUTION ──────────────────────────────
+
+    def resolve_expr(self, expr: str, chars: dict, all_chars: dict) -> str:
+        """Resolve ~request.characteristic[key].value expressions against chars."""
+        m = self.DYN_EXPR.match(str(expr))
+        if not m:
+            return str(expr)
+        path = m.group(1)
+        # Parse: ~request.characteristic[msisdn].value
+        attr_match = re.match(r"request\.characteristic\[(\w+)\]\.value", path)
+        if attr_match:
+            attr = attr_match.group(1)
+            val = all_chars.get(attr) or chars.get(attr, "")
+            return str(val)
+        return str(expr)
+
+    def to_pattern_match(self, service_type: str) -> dict:
+        """Build a patternMatch structure for the UI (DSL mode).
+
+        Includes DSL provenance: template file, version, schema used,
+        and validation status from load time.
+        """
+        dsl = self._definitions.get(service_type, {})
+        sd = dsl.get("service_definition", {}) or {}
+
+        # Collect file-level provenance
+        source_files = []
+        for ne in dsl.get("network_elements", []):
+            sf = ne.get("_source_file", "")
+            if sf and sf not in source_files:
+                source_files.append(sf)
+
+        # Schema validation status for this service's files
+        schema_status = "unknown"
+        schema_warnings = []
+        for entry in self._validation_log:
+            f = entry.get("file", "")
+            if any(sf in f for sf in source_files):
+                schema_warnings.append(entry.get("message", ""))
+        if not source_files:
+            schema_status = "no files loaded"
+        elif schema_warnings:
+            schema_status = f"warnings ({len(schema_warnings)} issue(s))"
+        else:
+            schema_status = "validated ✓"
+
+        return {
+            "result": "DSL",
+            "patternId": f"dsl:{service_type}",
+            "patternLabel": f"DSL → {dsl.get('domain', service_type)}",
+            "confidence": 1.0,  # DSL is always authoritative
+            "useCount": 0,
+            "triplesCount": 0,
+            "resourcesCount": len(dsl.get("network_elements", [])),
+            "compareLogic": "DSL template — deterministic mapping (no Jaccard matching)",
+            "requestChars": {},
+            "patternChars": {},
+            "matchedKeys": [],
+            "mismatchedKeys": [],
+            "extraKeys": [],
+            "excludedInstanceAttrs": sorted(self.INSTANCE_ATTRS),
+            "score": 1.0,
+            # ── DSL provenance metadata ──
+            "dslProvenance": {
+                "serviceType": service_type,
+                "domain": dsl.get("domain", ""),
+                "templateVersion": sd.get("version", "unknown"),
+                "systemCode": sd.get("systemCode", ""),
+                "sourceFiles": source_files,
+                "schemaStatus": schema_status,
+                "schemaWarnings": schema_warnings[:5] if schema_warnings else [],
+                "totalNEsDefined": len(dsl.get("network_elements", [])),
+            },
+        }
+
+
+# Global DSL engine
+dsl_engine = DSLEngine()
+
+# Cache engine selection (default: "pattern" — can be toggled via API)
+_cache_engine: str = "pattern"  # "pattern" | "dsl"
+
+
+def set_cache_engine(engine: str):
+    """Set the active cache engine: 'pattern' or 'dsl'."""
+    global _cache_engine
+    if engine not in ("pattern", "dsl"):
+        raise ValueError(f"Unknown cache engine: {engine}")
+    _cache_engine = engine
+    logger.info("Cache engine switched to: %s", engine)
+
+
+def get_cache_engine() -> str:
+    return _cache_engine
+
+
 def seed_kb_patterns():
     """Pre-seed pattern store from KB resource definitions.
 
@@ -1120,6 +1768,30 @@ def detect_service_type(text: str) -> str:
     if any(w in t for w in ["broadband", "ftth", "fiber", "ont", "olt"]): return "broadband"
     return "mobile"
 
+
+def detect_operation(text: str, is_json: bool = False) -> str:
+    """Detect the operation from the request (activate/modify/delete/suspend/resume)."""
+    t = text.lower()
+    if is_json:
+        try:
+            data = json.loads(t)
+            # TMF640: check action field
+            action = data.get("action", "")
+            if action:
+                return action.lower()
+        except Exception:
+            pass
+    # Unstructured / keyword-based detection
+    if any(w in t for w in ["delete", "remove", "deactivate", "cancel"]):
+        return "delete"
+    if any(w in t for w in ["modify", "update", "change", "upgrade", "downgrade"]):
+        return "modify"
+    if any(w in t for w in ["suspend", "pause"]):
+        return "suspend"
+    if any(w in t for w in ["resume", "reactivate", "restore"]):
+        return "resume"
+    return "activate"  # default
+
 # ====================================================================
 # Pipeline Engine
 # ====================================================================
@@ -1183,6 +1855,7 @@ def start_pipeline(prompt: str) -> ProcessResponse:
 
     # --- STAGE 2: CACHE ---
     svc = detect_service_type(prompt)
+    operation = detect_operation(prompt, is_json)  # detect intent operation
     # Build characteristics dict for pattern matching (exclude instance identifiers)
     chars = {}
     all_chars = {}  # includes instance attrs for full provisioning
@@ -1213,20 +1886,19 @@ def start_pipeline(prompt: str) -> ProcessResponse:
     subscriber_id = extract_subscriber_id(prompt, is_json, all_chars)
     previous_model = service_models.get(subscriber_id)
 
-    matched = patterns.lookup(svc, chars)
+    # === CACHE ENGINE SELECTION ===
+    engine = get_cache_engine()
     pattern_match = None  # structured match info for UI
-    if matched:
-        patterns.reinforce(matched)
-        plan = {"workflows": [r["workflow"] for r in matched.resources],
-                "params": {k: v for r in matched.resources for k, v in r["attributes"].items()},
-                "devices": [r["name"] for r in matched.resources]}
 
-        # Immediately cascade request characteristics into the cached plan.
-        # This ensures the plan reflects the current request's values (e.g.,
-        # MSISDN, IMSI, subscriber_profile), not stale values from a previous
-        # subscriber's learned pattern.  For structured JSON, all_chars has
-        # the full characteristic set from the TMF640 payload.
-        if all_chars:
+    if engine == "dsl":
+        # ── DSL Engine: deterministic YAML template matching ──
+        # Ensure DSL definitions are loaded (lazy on first use)
+        dsl_engine.load()
+        plan = dsl_engine.lookup(svc, all_chars, operation=operation)
+        pattern_match = dsl_engine.to_pattern_match(svc)
+
+        if plan and plan.get("devices"):
+            # Cascade all_chars into the DSL plan params (fill real values)
             cascaded = 0
             pp = plan.get("params", {})
             for k, v in all_chars.items():
@@ -1234,83 +1906,146 @@ def start_pipeline(prompt: str) -> ProcessResponse:
                 if not sv.startswith("default_") and not sv.startswith("<"):
                     pp[k] = v
                     cascaded += 1
-            if cascaded:
-                plan["params"] = pp
-                step("MERGE", "done", f"Sync-Phase Merge — {cascaded} Request Chars Cascaded",
-                     f"Goal: Cascade request characteristics into cached plan before background dispatch.\\n"
-                     f"Actual: {cascaded} characteristics from request overlaid onto {len(matched.resources)}-resource plan.\\n"
-                     f"Output: Plan params now reflect current request, not stale cached values.",
-                     "violet", "🔄")
+            plan["params"] = pp
 
-        # Build detailed match comparison
-        req_keys = {k for k in chars if k.lower() not in patterns.INSTANCE_ATTRS}
-        pat_keys = set(matched.characteristics.keys())
-        matched_keys = {k for k in req_keys & pat_keys if str(chars.get(k,"")) == str(matched.characteristics.get(k,""))}
-        mismatched_keys = (req_keys & pat_keys) - matched_keys
-        extra_keys = req_keys - pat_keys
-        pattern_match = {
-            "result": "HIT",
-            "patternId": matched.id,
-            "patternLabel": matched.label,
-            "confidence": round(matched.confidence, 2),
-            "useCount": matched.use_count,
-            "triplesCount": len(matched.triples),
-            "resourcesCount": len(matched.resources),
-            "compareLogic": "Jaccard similarity on service-defining characteristics",
-            "requestChars": {k: str(v) for k, v in chars.items() if k.lower() not in patterns.INSTANCE_ATTRS},
-            "patternChars": {k: str(v) for k, v in matched.characteristics.items()},
-            "matchedKeys": sorted(matched_keys),
-            "mismatchedKeys": sorted(mismatched_keys),
-            "extraKeys": sorted(extra_keys),
-            "excludedInstanceAttrs": sorted(k for k in chars if k.lower() in patterns.INSTANCE_ATTRS),
-            "score": round(len(matched_keys) / max(len(req_keys | pat_keys), 1), 2),
-        }
-        # Build concise comparison table for trace
-        compare_rows = []
-        for k in sorted(req_keys | pat_keys):
-            req_v = chars.get(k, "—")
-            pat_v = matched.characteristics.get(k, "—")
-            status = "✓" if str(req_v) == str(pat_v) else "✗" if k in req_keys and k in pat_keys else "?"
-            compare_rows.append(f"  {status} {k}: request={req_v}  |  pattern={pat_v}")
-        step("CACHE", "done", f"Pattern Match — {matched.id} ✓",
-             f"Goal: Query the RDF pattern store for a matching orchestration pattern.\\n"
-             f"Input: service_type={svc}, comparing {len(req_keys)} service-defining characteristics\\n"
-             f"Expected: Jaccard match against {len(patterns._index.get(svc,[]))} known {svc} patterns\\n"
-             f"Actual: Pattern HIT — {matched.label}\\n"
-             f"  Confidence: {matched.confidence:.0%} ({matched.use_count} uses)\\n"
-             f"  Score: {pattern_match['score']:.0%} ({len(matched_keys)}/{len(req_keys|pat_keys)} keys match)\\n"
-             + "\\n".join(compare_rows) + "\\n\\n"
-             + (f"  Instance attrs excluded: {', '.join(pattern_match['excludedInstanceAttrs'])}\\n" if pattern_match['excludedInstanceAttrs'] else "")
-             + f"Output: Pre-validated plan with {len(matched.resources)} network elements.\\n"
-             f"⏱ 0ms LLM latency.",
-             "green", "⚡")
-        llm_used = False
-        pattern_hit = matched
+            dsl_domain = pattern_match.get("patternLabel", svc)
+            dsl_prov = pattern_match.get("dslProvenance", {})
+            dsl_template = plan.get("_dsl_template", {})
+            populated_nes = dsl_template.get("network_elements", [])
+            included_nes = [n for n in populated_nes if n["decision"] == "INCLUDE"]
+            skipped_nes = [n for n in populated_nes if n["decision"] == "SKIP"]
+
+            trace_detail = (
+                f"Goal: Populate Service DSL template with request characteristics.\\n"
+                f"Input: service_type={svc}, operation={operation}, {len(all_chars)} characteristics\\n"
+                f"Expected: Resolve ~expressions in Service DSL → Intent DSL → NE references\\n"
+                f"Actual: DSL template populated — {dsl_prov.get('systemCode', svc)} {dsl_prov.get('templateVersion', '?')}\\n"
+                f"  Schema: {dsl_prov.get('schemaStatus', '?')}\\n"
+                f"  {len(included_nes)} NEs included: {', '.join(n['name'] for n in included_nes)}\\n"
+            )
+            if skipped_nes:
+                ne_skips = "\\n".join(
+                    f"    ✗ {n['name']}: {n['skip_reason']}"
+                    for n in skipped_nes
+                )
+                trace_detail += (
+                    f"  {len(skipped_nes)} NEs skipped (_if_ conditions not met):\\n"
+                    f"{ne_skips}\\n"
+                )
+            trace_detail += (
+                f"  {len(plan['workflows'])} workflows\\n"
+                f"  {len(plan['params'])} params (incl. {cascaded} cascaded from request)\\n"
+                f"  Templates: authoritative YAML DSL (score=1.0)\\n"
+                f"Output: Populated DSL template with {len(plan['devices'])} network elements.\\n"
+                f"⏱ 0ms LLM latency — DSL is the plan."
+            )
+            step("CACHE", "done", f"DSL Cache — {dsl_domain} ✓",
+                 trace_detail, "green", "📋")
+            llm_used = False
+            pattern_hit = None
+        else:
+            # DSL exists but produced empty plan — fall through to LLM
+            step("CACHE", "done", "DSL Cache — MISS (Empty Plan)",
+                 f"Goal: Build plan from DSL templates.\\n"
+                 f"Actual: DSL returned no devices — falling back to LLM.",
+                 "amber", "📡")
+            plan = None
+            llm_used = True
+            pattern_hit = None
+
     else:
-        # Build miss details
-        all_pats = patterns.list_all()
-        same_svc = [p for p in all_pats if p["service_type"] == svc]
-        req_keys = {k for k in chars if k.lower() not in patterns.INSTANCE_ATTRS}
-        pattern_match = {
-            "result": "MISS",
-            "patternsInStore": len(all_pats),
-            "patternsForService": len(same_svc),
-            "requestChars": {k: str(v) for k, v in chars.items() if k.lower() not in patterns.INSTANCE_ATTRS},
-            "excludedInstanceAttrs": sorted(k for k in chars if k.lower() in patterns.INSTANCE_ATTRS),
-            "compareLogic": "Jaccard similarity on service-defining characteristics",
-        }
-        step("CACHE", "done", "Pattern Store — MISS",
-             f"Goal: Query the RDF pattern store for a matching orchestration pattern.\\n"
-             f"Input: service_type={svc}, {len(req_keys)} service-defining characteristics\\n"
-             f"Request chars: {json.dumps(pattern_match['requestChars'])}\\n"
-             f"Expected: Find matching pattern via Jaccard similarity\\n"
-             f"Actual: No match — {len(same_svc)} patterns for '{svc}', {len(all_pats)} total in store\\n"
-             + (f"  Instance attrs excluded: {', '.join(pattern_match['excludedInstanceAttrs'])}\\n" if pattern_match['excludedInstanceAttrs'] else "")
-             + f"Output: Flag llm_used=True → Deepseek will reason from KB, then pattern will be learned.",
-             "amber", "📡")
-        plan = None
-        llm_used = True
-        pattern_hit = None
+        # ── Pattern Engine: RDF-based Jaccard matching (default) ──
+        matched = patterns.lookup(svc, chars)
+        if matched:
+            patterns.reinforce(matched)
+            plan = {"workflows": [r["workflow"] for r in matched.resources],
+                    "params": {k: v for r in matched.resources for k, v in r["attributes"].items()},
+                    "devices": [r["name"] for r in matched.resources]}
+
+            # Immediately cascade request characteristics into the cached plan.
+            if all_chars:
+                cascaded = 0
+                pp = plan.get("params", {})
+                for k, v in all_chars.items():
+                    sv = str(v)
+                    if not sv.startswith("default_") and not sv.startswith("<"):
+                        pp[k] = v
+                        cascaded += 1
+                if cascaded:
+                    plan["params"] = pp
+                    step("MERGE", "done", f"Sync-Phase Merge — {cascaded} Request Chars Cascaded",
+                         f"Goal: Cascade request characteristics into cached plan before background dispatch.\\n"
+                         f"Actual: {cascaded} characteristics from request overlaid onto {len(matched.resources)}-resource plan.\\n"
+                         f"Output: Plan params now reflect current request, not stale cached values.",
+                         "violet", "🔄")
+
+            # Build detailed match comparison
+            req_keys = {k for k in chars if k.lower() not in patterns.INSTANCE_ATTRS}
+            pat_keys = set(matched.characteristics.keys())
+            matched_keys = {k for k in req_keys & pat_keys if str(chars.get(k,"")) == str(matched.characteristics.get(k,""))}
+            mismatched_keys = (req_keys & pat_keys) - matched_keys
+            extra_keys = req_keys - pat_keys
+            pattern_match = {
+                "result": "HIT",
+                "patternId": matched.id,
+                "patternLabel": matched.label,
+                "confidence": round(matched.confidence, 2),
+                "useCount": matched.use_count,
+                "triplesCount": len(matched.triples),
+                "resourcesCount": len(matched.resources),
+                "compareLogic": "Jaccard similarity on service-defining characteristics",
+                "requestChars": {k: str(v) for k, v in chars.items() if k.lower() not in patterns.INSTANCE_ATTRS},
+                "patternChars": {k: str(v) for k, v in matched.characteristics.items()},
+                "matchedKeys": sorted(matched_keys),
+                "mismatchedKeys": sorted(mismatched_keys),
+                "extraKeys": sorted(extra_keys),
+                "excludedInstanceAttrs": sorted(k for k in chars if k.lower() in patterns.INSTANCE_ATTRS),
+                "score": round(len(matched_keys) / max(len(req_keys | pat_keys), 1), 2),
+            }
+            compare_rows = []
+            for k in sorted(req_keys | pat_keys):
+                req_v = chars.get(k, "—")
+                pat_v = matched.characteristics.get(k, "—")
+                status = "✓" if str(req_v) == str(pat_v) else "✗" if k in req_keys and k in pat_keys else "?"
+                compare_rows.append(f"  {status} {k}: request={req_v}  |  pattern={pat_v}")
+            step("CACHE", "done", f"Pattern Match — {matched.id} ✓",
+                 f"Goal: Query the RDF pattern store for a matching orchestration pattern.\\n"
+                 f"Input: service_type={svc}, comparing {len(req_keys)} service-defining characteristics\\n"
+                 f"Expected: Jaccard match against {len(patterns._index.get(svc,[]))} known {svc} patterns\\n"
+                 f"Actual: Pattern HIT — {matched.label}\\n"
+                 f"  Confidence: {matched.confidence:.0%} ({matched.use_count} uses)\\n"
+                 f"  Score: {pattern_match['score']:.0%} ({len(matched_keys)}/{len(req_keys|pat_keys)} keys match)\\n"
+                 + "\\n".join(compare_rows) + "\\n\\n"
+                 + (f"  Instance attrs excluded: {', '.join(pattern_match['excludedInstanceAttrs'])}\\n" if pattern_match['excludedInstanceAttrs'] else "")
+                 + f"Output: Pre-validated plan with {len(matched.resources)} network elements.\\n"
+                 f"⏱ 0ms LLM latency.",
+                 "green", "⚡")
+            llm_used = False
+            pattern_hit = matched
+        else:
+            all_pats = patterns.list_all()
+            same_svc = [p for p in all_pats if p["service_type"] == svc]
+            req_keys = {k for k in chars if k.lower() not in patterns.INSTANCE_ATTRS}
+            pattern_match = {
+                "result": "MISS",
+                "patternsInStore": len(all_pats),
+                "patternsForService": len(same_svc),
+                "requestChars": {k: str(v) for k, v in chars.items() if k.lower() not in patterns.INSTANCE_ATTRS},
+                "excludedInstanceAttrs": sorted(k for k in chars if k.lower() in patterns.INSTANCE_ATTRS),
+                "compareLogic": "Jaccard similarity on service-defining characteristics",
+            }
+            step("CACHE", "done", "Pattern Store — MISS",
+                 f"Goal: Query the RDF pattern store for a matching orchestration pattern.\\n"
+                 f"Input: service_type={svc}, {len(req_keys)} service-defining characteristics\\n"
+                 f"Request chars: {json.dumps(pattern_match['requestChars'])}\\n"
+                 f"Expected: Find matching pattern via Jaccard similarity\\n"
+                 f"Actual: No match — {len(same_svc)} patterns for '{svc}', {len(all_pats)} total in store\\n"
+                 + (f"  Instance attrs excluded: {', '.join(pattern_match['excludedInstanceAttrs'])}\\n" if pattern_match['excludedInstanceAttrs'] else "")
+                 + f"Output: Flag llm_used=True → Deepseek will reason from KB, then pattern will be learned.",
+                 "amber", "📡")
+            plan = None
+            llm_used = True
+            pattern_hit = None
 
     # --- STAGE 3 onward: dispatch to background ---
     docs = KB_DOCS.get(svc, "Generic provisioning standards")
@@ -1335,6 +2070,7 @@ def start_pipeline(prompt: str) -> ProcessResponse:
         "pattern_match": pattern_match,
         "plan": plan, "t0": t0,
         "subscriber_id": subscriber_id, "previous_model": previous_model,
+        "operation": operation,
     }
     with jobs_lock:
         jobs[order_id] = result
@@ -1371,6 +2107,7 @@ def _run_background_inner(state: dict):
     previous_model = state.get("previous_model")
     pattern_hit = state.get("pattern_hit")
     pattern_match = state.get("pattern_match")
+    operation = state.get("operation", "activate")
     masked_text = state["masked_text"]
     token_map = state["token_map"]
     n_tokens = state["n_tokens"]
@@ -1697,7 +2434,11 @@ The workflows, params, and devices MUST correspond to the network elements ident
                        "subscriberId": subscriber_id,
                        "subscriberDiff": subscriber_diff,
                        "notificationCount": notif_count,
-                       "notifications": notifications}
+                       "notifications": notifications,
+                       "dslTrace": plan.get("_dsl_template", {}).get("network_elements", []) if plan else [],
+                       "dslPlan": {"workflows": plan.get("workflows", []), "devices": plan.get("devices", []), "params": plan.get("params", {})} if plan else {},
+                       "dslOperation": operation,
+                       "dslTemplate": plan.get("_dsl_template", {}) if plan else {}}
         step("VERIFY", "done", "Verification & Pattern Learning",
              f"Goal: Confirm service is active, persist model, cross-validate.\\n"
              f"Actual: Service {svc_id} ACTIVE — {len(network_elements)} network elements configured.\\n"
@@ -1809,6 +2550,108 @@ async def get_notifications(order_id: str):
         "count": job.final_state.get("notificationCount", 0),
     }
 
+
+# ====================================================================
+# Cache Engine Configuration API
+# ====================================================================
+@app.get("/api/config/cache")
+async def get_cache_config():
+    """Get current cache engine and available engines."""
+    engine = get_cache_engine()
+    # DSL metadata is only relevant when DSL is the active engine.
+    # When pattern is active, return null to prevent cross-contamination.
+    if engine == "dsl":
+        # Ensure DSL definitions are loaded (lazy on first access)
+        dsl_engine.load()
+        dsl_loaded = dsl_engine._loaded
+        dsl_defs = list(dsl_engine._definitions.keys()) if dsl_loaded else []
+        dsl_validation = dsl_engine._validation_log if dsl_loaded else []
+        dsl_meta = {
+            "dslLoaded": dsl_loaded,
+            "dslDefinitions": dsl_defs,
+            "dslSchemasLoaded": len(dsl_engine._schemas),
+            "dslValidationIssues": len(dsl_validation),
+            "dslValidationLog": [
+                {"file": e.get("file", "").split("/")[-1], "severity": e.get("severity", ""),
+                 "message": e.get("message", ""), "schema": e.get("schema", "")}
+                for e in dsl_validation[:20]
+            ],
+        }
+    else:
+        dsl_meta = {
+            "dslLoaded": False,
+            "dslDefinitions": [],
+            "dslSchemasLoaded": 0,
+            "dslValidationIssues": 0,
+            "dslValidationLog": [],
+        }
+    return {
+        "engine": engine,
+        "availableEngines": ["pattern", "dsl"],
+        "description": {
+            "pattern": "RDF-inspired auto-learning pattern store with Jaccard matching",
+            "dsl": "YAML DSL deterministic templates — always HIT for known services",
+        },
+        **dsl_meta,
+    }
+
+
+@app.post("/api/config/cache")
+async def set_cache_config(request: dict):
+    """Set the active cache engine: 'pattern' or 'dsl'."""
+    engine = request.get("engine", "")
+    if engine not in ("pattern", "dsl"):
+        return JSONResponse(
+            {"error": f"Unknown engine '{engine}'. Use 'pattern' or 'dsl'."},
+            status_code=400)
+    try:
+        set_cache_engine(engine)
+        return {
+            "status": "ok",
+            "engine": engine,
+            "message": f"Cache engine switched to: {engine}",
+        }
+    except ValueError as e:
+        return JSONResponse({"error": str(e)}, status_code=400)
+
+
+# ====================================================================
+# DSL Definitions API
+# ====================================================================
+@app.get("/api/dsl/definitions")
+async def list_dsl_definitions():
+    """List all loaded DSL service definitions."""
+    dsl_engine.load()
+    result = {}
+    for svc, dsl in dsl_engine._definitions.items():
+        nes = dsl.get("network_elements", [])
+        result[svc] = {
+            "domain": dsl.get("domain", ""),
+            "networkElementCount": len(nes),
+            "networkElements": [
+                {
+                    "name": n["name"],
+                    "workflow": n["workflow"],
+                    "attributes": n.get("attributes", []),
+                    "conditions": n.get("conditions", []),
+                }
+                for n in nes
+            ],
+        }
+    return {"definitions": result}
+
+
+@app.get("/api/dsl/plan/{service_type}")
+async def get_dsl_plan(service_type: str):
+    """Preview the DSL plan for a given service type (no request context)."""
+    dsl_engine.load()
+    plan = dsl_engine.lookup(service_type, {})
+    if plan is None:
+        return JSONResponse(
+            {"error": f"No DSL definition for service type: {service_type}"},
+            status_code=404)
+    return {"serviceType": service_type, "plan": plan}
+
 @app.post("/api/locks/release")
 async def release_lock(request: dict):
     """Admin endpoint: force-release a subscriber lock."""
@@ -1838,7 +2681,8 @@ async def lock_status():
 # Serve static frontend
 @app.get("/")
 async def index():
-    return FileResponse("/opt/data/telecom-orchestrator/poc/static/index.html")
+    return FileResponse("/opt/data/telecom-orchestrator/poc/static/index.html",
+                        headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
 
 app.mount("/static", StaticFiles(directory="/opt/data/telecom-orchestrator/poc/static"), name="static")
 

@@ -20,13 +20,19 @@ public class PipelineEngine {
     private static final Logger log = LoggerFactory.getLogger(PipelineEngine.class);
 
     private final PatternStore patterns;
+    private final DSLStore dslStore;
     private final ServiceModelStore serviceModels;
     private final SubscriberLock subscriberLock;
     private final ExecutorService executor = Executors.newFixedThreadPool(4);
     private final Map<String, ProcessResponse> jobs = new ConcurrentHashMap<>();
 
-    public PipelineEngine(PatternStore patterns, ServiceModelStore serviceModels, SubscriberLock subscriberLock) {
+    /** Active cache engine: "pattern" (default) or "dsl". */
+    private volatile String cacheEngine = "pattern";
+
+    public PipelineEngine(PatternStore patterns, DSLStore dslStore,
+                          ServiceModelStore serviceModels, SubscriberLock subscriberLock) {
         this.patterns = patterns;
+        this.dslStore = dslStore;
         this.serviceModels = serviceModels;
         this.subscriberLock = subscriberLock;
         this.patterns.seedFromKB();
@@ -154,8 +160,49 @@ public class PipelineEngine {
         subscriberId[0] = extractSubscriberId(prompt, isJson[0], allChars);
         previousModel[0] = serviceModels.get(subscriberId[0]);
 
-        PatternNode matched = patterns.lookup(svc[0], chars);
-        if (matched != null) {
+        // === CACHE ENGINE SELECTION ===
+        if ("dsl".equals(cacheEngine)) {
+            // ── DSL Engine: deterministic YAML template ──
+            dslStore.load();
+            plan[0] = dslStore.lookup(svc[0], allChars);
+            patternMatch[0] = buildDslDetail(svc[0]);
+
+            if (plan[0] != null && !((List<?>) plan[0].getOrDefault("devices", List.of())).isEmpty()) {
+                // Cascade request chars into plan
+                Map<String, Object> pp = (Map<String, Object>) plan[0].get("params");
+                if (pp != null && !allChars.isEmpty()) {
+                    int cascaded = 0;
+                    for (var e : allChars.entrySet()) {
+                        String sv = String.valueOf(e.getValue());
+                        if (!sv.startsWith("default_") && !sv.startsWith("<")) {
+                            pp.put(e.getKey(), e.getValue());
+                            cascaded++;
+                        }
+                    }
+                    if (cascaded > 0) plan[0].put("params", pp);
+                }
+                llmUsed[0] = false;
+                step.emit("CACHE", "done", "DSL Cache — " + svc[0] + " ✓",
+                    detail("Build plan from DSL templates.",
+                           "Service = " + svc[0] + ", chars = " + allChars.size() + " key(s)",
+                           "Match known DSL service definitions.",
+                           "DSL HIT — " + plan[0].getOrDefault("devices", List.of()).toString(),
+                           "Deterministic plan ready; 0ms LLM latency."),
+                    "green", "📋");
+            } else {
+                llmUsed[0] = true;
+                plan[0] = null;
+                step.emit("CACHE", "done", "DSL Cache — MISS (Empty Plan)",
+                    detail("Build plan from DSL templates.",
+                           "Service = " + svc[0],
+                           "DSL template should produce a plan.",
+                           "DSL returned empty plan — falling through to LLM.",
+                           "Flagged for LLM fallback."),
+                    "amber", "📡");
+            }
+        } else {
+            // ── Pattern Engine: Jaccard matching ──
+            PatternNode matched = patterns.lookup(svc[0], chars);
             patterns.reinforce(matched);
             plan[0] = new LinkedHashMap<>();
             List<String> workflows = new ArrayList<>();
@@ -233,6 +280,8 @@ public class PipelineEngine {
                        "Will invoke LLM for plan generation."),
                 "amber", "📡");
         }
+
+        } // end pattern engine branch
 
         step.emit("LLM", "done", "Pipeline Dispatched — Background Processing",
             detail("Offload remaining stages to background thread.",
@@ -669,6 +718,22 @@ public class PipelineEngine {
         return detail;
     }
 
+    private Map<String, Object> buildDslDetail(String svc) {
+        Map<String, Object> detail = new LinkedHashMap<>();
+        detail.put("result", "DSL");
+        detail.put("patternId", "dsl:" + svc);
+        List<String> domains = dslStore.getServiceNames();
+        detail.put("patternLabel", "DSL -> " + svc);
+        detail.put("confidence", 1.0);
+        detail.put("useCount", 0);
+        detail.put("compareLogic", "DSL template — deterministic mapping (no Jaccard matching)");
+        detail.put("matchedKeys", List.of());
+        detail.put("mismatchedKeys", List.of());
+        detail.put("extraKeys", List.of());
+        detail.put("score", 1.0);
+        return detail;
+    }
+
     // ===== UTILITIES =====
 
     private Map<String, Object> callLLM(BackgroundState st) {
@@ -808,6 +873,36 @@ public class PipelineEngine {
 
     public PatternNode teachPattern(List<List<String>> triples) {
         return patterns.teach(triples, "teach");
+    }
+
+    // ── Cache Engine Control ───────────────────────
+
+    public String getCacheEngine() {
+        return cacheEngine;
+    }
+
+    public void setCacheEngine(String engine) {
+        if (!"pattern".equals(engine) && !"dsl".equals(engine)) {
+            throw new IllegalArgumentException("Unknown cache engine: " + engine);
+        }
+        this.cacheEngine = engine;
+        log.info("Cache engine switched to: {}", engine);
+    }
+
+    public boolean isDslLoaded() {
+        return dslStore != null && dslStore.isLoaded();
+    }
+
+    public List<String> getDslServiceNames() {
+        return dslStore != null ? dslStore.getServiceNames() : List.of();
+    }
+
+    public Map<String, Object> listDslDefinitions() {
+        return dslStore != null ? dslStore.listAll() : Map.of("definitions", Map.of());
+    }
+
+    public Map<String, Object> getDslPlan(String serviceType) {
+        return dslStore != null ? dslStore.lookup(serviceType, Map.of()) : null;
     }
 
     private void validateAndRepairCache() {

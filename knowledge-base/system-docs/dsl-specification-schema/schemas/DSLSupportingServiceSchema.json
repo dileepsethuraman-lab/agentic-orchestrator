@@ -1,0 +1,771 @@
+{
+  "$id" : "http://orchaas-schema-service/v1",
+  "$schema" : "http://json-schema.org/draft-07/schema#",
+  "title" : "ORCHaaS YAML DSL Operation Specification",
+  "version" : "v1.0",
+  "additionalProperties" : false,
+  "required" : [ "configType", "supportingServices" ],
+  "properties" : {
+    "supportingServices" : {
+      "type" : "array",
+      "items" : {
+        "type" : "object",
+        "additionalProperties" : false,
+        "properties" : {
+          "_with_" : {
+            "type" : "object",
+            "additionalProperties" : false,
+            "not" : {
+              "required" : [ "_with_" ]
+            },
+            "required" : [ "data", "as" ],
+            "properties" : {
+              "as" : {
+                "type" : "string"
+              },
+              "data" : {
+                "type" : "string"
+              }
+            }
+          }
+        },
+        "patternProperties" : {
+          "^[a-zA-Z0-9]*" : {
+            "type" : "object",
+            "additionalProperties" : false,
+            "properties" : {
+              "parentToChildRelationship" : {
+                "type" : "string",
+                "enum" : [ "supports", "relatesTo", "creates" ]
+              },
+              "supportingServices" : {
+                "oneOf" : [ {
+                  "type" : "array",
+                  "items" : {
+                    "type" : "object",
+                    "additionalProperties" : false,
+                    "properties" : {
+                      "serviceCharacteristics" : {
+                        "type" : "object",
+                        "additionalProperties" : false,
+                        "properties" : {
+                          "_with_" : {
+                            "type" : "object",
+                            "additionalProperties" : false,
+                            "not" : {
+                              "required" : [ "_with_" ]
+                            },
+                            "required" : [ "data", "as" ],
+                            "properties" : {
+                              "as" : {
+                                "type" : "string"
+                              },
+                              "data" : {
+                                "type" : "string"
+                              }
+                            }
+                          }
+                        },
+                        "patternProperties" : {
+                          "^[a-zA-Z0-9]*\\^?" : {
+                            "oneOf" : [ {
+                              "type" : "string"
+                            }, {
+                              "type" : "boolean"
+                            }, {
+                              "type" : "number"
+                            }, {
+                              "type" : "object",
+                              "additionalProperties" : true,
+                              "properties" : {
+                                "_for_" : {
+                                  "type" : "object",
+                                  "additionalProperties" : false,
+                                  "required" : [ "each", "as", "keys" ],
+                                  "properties" : {
+                                    "as" : {
+                                      "type" : "string"
+                                    },
+                                    "keys" : {
+                                      "type" : "array",
+                                      "items" : {
+                                        "type" : "string"
+                                      }
+                                    },
+                                    "each" : {
+                                      "type" : "string",
+                                      "pattern" : "^~(.*)"
+                                    },
+                                    "_with_" : {
+                                      "type" : "object",
+                                      "additionalProperties" : false,
+                                      "not" : {
+                                        "required" : [ "_with_" ]
+                                      },
+                                      "required" : [ "data", "as" ],
+                                      "properties" : {
+                                        "as" : {
+                                          "type" : "string"
+                                        },
+                                        "data" : {
+                                          "type" : "string"
+                                        }
+                                      }
+                                    }
+                                  }
+                                },
+                                "_with_" : {
+                                  "type" : "object",
+                                  "additionalProperties" : false,
+                                  "not" : {
+                                    "required" : [ "_with_" ]
+                                  },
+                                  "required" : [ "data", "as" ],
+                                  "properties" : {
+                                    "as" : {
+                                      "type" : "string"
+                                    },
+                                    "data" : {
+                                      "type" : "string"
+                                    }
+                                  }
+                                }
+                              }
+                            }, {
+                              "type" : "array"
+                            } ]
+                          }
+                        }
+                      },
+                      "_with_" : {
+                        "type" : "object",
+                        "additionalProperties" : false,
+                        "not" : {
+                          "required" : [ "_with_" ]
+                        },
+                        "required" : [ "data", "as" ],
+                        "properties" : {
+                          "as" : {
+                            "type" : "string"
+                          },
+                          "data" : {
+                            "type" : "string"
+                          }
+                        }
+                      }
+                    },
+                    "patternProperties" : {
+                      "^[a-zA-Z0-9]*" : {
+                        "type" : "object",
+                        "additionalProperties" : false,
+                        "properties" : {
+                          "parentToChildRelationship" : {
+                            "type" : "string",
+                            "enum" : [ "supports", "relatesTo", "creates" ]
+                          },
+                          "serviceSpecification" : {
+                            "type" : "object",
+                            "additionalProperties" : false,
+                            "properties" : {
+                              "id" : {
+                                "type" : "string",
+                                "pattern" : "^([a-f0-9]{24})|([a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89aAbB][a-f0-9]{3}-[a-f0-9]{12})$"
+                              },
+                              "href" : {
+                                "type" : "string"
+                              },
+                              "_with_" : {
+                                "type" : "object",
+                                "additionalProperties" : false,
+                                "not" : {
+                                  "required" : [ "_with_" ]
+                                },
+                                "required" : [ "data", "as" ],
+                                "properties" : {
+                                  "as" : {
+                                    "type" : "string"
+                                  },
+                                  "data" : {
+                                    "type" : "string"
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          "childToParentRelationship" : {
+                            "type" : "string"
+                          },
+                          "name" : {
+                            "type" : "string"
+                          },
+                          "place" : {
+                            "type" : "object",
+                            "additionalProperties" : false,
+                            "properties" : {
+                              "_with_" : {
+                                "type" : "object",
+                                "additionalProperties" : false,
+                                "not" : {
+                                  "required" : [ "_with_" ]
+                                },
+                                "required" : [ "data", "as" ],
+                                "properties" : {
+                                  "as" : {
+                                    "type" : "string"
+                                  },
+                                  "data" : {
+                                    "type" : "string"
+                                  }
+                                }
+                              }
+                            },
+                            "patternProperties" : {
+                              "^[a-zA-Z0-9]*" : {
+                                "oneOf" : [ {
+                                  "type" : "object",
+                                  "additionalProperties" : false,
+                                  "required" : [ "id" ],
+                                  "properties" : {
+                                    "role" : {
+                                      "type" : "string"
+                                    },
+                                    "referredType" : {
+                                      "type" : "string"
+                                    },
+                                    "name" : {
+                                      "type" : "string"
+                                    },
+                                    "id" : {
+                                      "type" : "string"
+                                    },
+                                    "type" : {
+                                      "type" : "string"
+                                    },
+                                    "_with_" : {
+                                      "type" : "object",
+                                      "additionalProperties" : false,
+                                      "not" : {
+                                        "required" : [ "_with_" ]
+                                      },
+                                      "required" : [ "data", "as" ],
+                                      "properties" : {
+                                        "as" : {
+                                          "type" : "string"
+                                        },
+                                        "data" : {
+                                          "type" : "string"
+                                        }
+                                      }
+                                    }
+                                  }
+                                }, {
+                                  "type" : "string",
+                                  "enum" : [ "+", "_" ]
+                                } ]
+                              }
+                            }
+                          },
+                          "relatedParty" : {
+                            "type" : "object",
+                            "additionalProperties" : false,
+                            "properties" : {
+                              "_with_" : {
+                                "type" : "object",
+                                "additionalProperties" : false,
+                                "not" : {
+                                  "required" : [ "_with_" ]
+                                },
+                                "required" : [ "data", "as" ],
+                                "properties" : {
+                                  "as" : {
+                                    "type" : "string"
+                                  },
+                                  "data" : {
+                                    "type" : "string"
+                                  }
+                                }
+                              }
+                            },
+                            "patternProperties" : {
+                              "^[a-zA-Z0-9]*" : {
+                                "oneOf" : [ {
+                                  "type" : "object",
+                                  "additionalProperties" : false,
+                                  "required" : [ "id" ],
+                                  "properties" : {
+                                    "role" : {
+                                      "type" : "string"
+                                    },
+                                    "referredType" : {
+                                      "type" : "string"
+                                    },
+                                    "name" : {
+                                      "type" : "string"
+                                    },
+                                    "id" : {
+                                      "type" : "string"
+                                    },
+                                    "href" : {
+                                      "type" : "string"
+                                    },
+                                    "type" : {
+                                      "type" : "string"
+                                    },
+                                    "_with_" : {
+                                      "type" : "object",
+                                      "additionalProperties" : false,
+                                      "not" : {
+                                        "required" : [ "_with_" ]
+                                      },
+                                      "required" : [ "data", "as" ],
+                                      "properties" : {
+                                        "as" : {
+                                          "type" : "string"
+                                        },
+                                        "data" : {
+                                          "type" : "string"
+                                        }
+                                      }
+                                    }
+                                  }
+                                }, {
+                                  "type" : "string",
+                                  "enum" : [ "+", "_" ]
+                                } ]
+                              }
+                            }
+                          },
+                          "_with_" : {
+                            "type" : "object",
+                            "additionalProperties" : false,
+                            "not" : {
+                              "required" : [ "_with_" ]
+                            },
+                            "required" : [ "data", "as" ],
+                            "properties" : {
+                              "as" : {
+                                "type" : "string"
+                              },
+                              "data" : {
+                                "type" : "string"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }, {
+                  "type" : "string",
+                  "enum" : [ "+", "_" ]
+                } ]
+              },
+              "serviceCharacteristics" : {
+                "oneOf" : [ {
+                  "type" : "object",
+                  "additionalProperties" : false,
+                  "properties" : {
+                    "_with_" : {
+                      "type" : "object",
+                      "additionalProperties" : false,
+                      "not" : {
+                        "required" : [ "_with_" ]
+                      },
+                      "required" : [ "data", "as" ],
+                      "properties" : {
+                        "as" : {
+                          "type" : "string"
+                        },
+                        "data" : {
+                          "type" : "string"
+                        }
+                      }
+                    }
+                  },
+                  "patternProperties" : {
+                    "^[a-zA-Z0-9]*\\^?" : {
+                      "oneOf" : [ {
+                        "type" : "string"
+                      }, {
+                        "type" : "boolean"
+                      }, {
+                        "type" : "number"
+                      }, {
+                        "type" : "object",
+                        "additionalProperties" : true,
+                        "properties" : {
+                          "_for_" : {
+                            "type" : "object",
+                            "additionalProperties" : false,
+                            "required" : [ "each", "as", "keys" ],
+                            "properties" : {
+                              "as" : {
+                                "type" : "string"
+                              },
+                              "keys" : {
+                                "type" : "array",
+                                "items" : {
+                                  "type" : "string"
+                                }
+                              },
+                              "each" : {
+                                "type" : "string",
+                                "pattern" : "^~(.*)"
+                              },
+                              "_with_" : {
+                                "type" : "object",
+                                "additionalProperties" : false,
+                                "not" : {
+                                  "required" : [ "_with_" ]
+                                },
+                                "required" : [ "data", "as" ],
+                                "properties" : {
+                                  "as" : {
+                                    "type" : "string"
+                                  },
+                                  "data" : {
+                                    "type" : "string"
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          "_with_" : {
+                            "type" : "object",
+                            "additionalProperties" : false,
+                            "not" : {
+                              "required" : [ "_with_" ]
+                            },
+                            "required" : [ "data", "as" ],
+                            "properties" : {
+                              "as" : {
+                                "type" : "string"
+                              },
+                              "data" : {
+                                "type" : "string"
+                              }
+                            }
+                          }
+                        }
+                      }, {
+                        "type" : "array"
+                      } ]
+                    }
+                  }
+                }, {
+                  "type" : "string",
+                  "enum" : [ "+", "_" ]
+                } ]
+              },
+              "prefetch" : {
+                "description" : "This defines the workflow to prefetch data for this network element",
+                "type" : "object",
+                "additionalProperties" : false,
+                "required" : [ "workflow" ],
+                "properties" : {
+                  "variables" : {
+                    "type" : "object",
+                    "additionalProperties" : true,
+                    "properties" : {
+                      "_with_" : {
+                        "type" : "object",
+                        "additionalProperties" : false,
+                        "not" : {
+                          "required" : [ "_with_" ]
+                        },
+                        "required" : [ "data", "as" ],
+                        "properties" : {
+                          "as" : {
+                            "type" : "string"
+                          },
+                          "data" : {
+                            "type" : "string"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "workflow" : {
+                    "type" : "string",
+                    "pattern" : "^workflows\\/.*\\.sw\\.ya?ml$"
+                  },
+                  "hrefMatch" : {
+                    "type" : "string"
+                  },
+                  "_if_" : {
+                    "oneOf" : [ {
+                      "type" : "string",
+                      "pattern" : "^~(.*)"
+                    }, {
+                      "type" : "array",
+                      "items" : {
+                        "type" : "string",
+                        "pattern" : "^~(.*)"
+                      }
+                    } ]
+                  },
+                  "_with_" : {
+                    "type" : "object",
+                    "additionalProperties" : false,
+                    "not" : {
+                      "required" : [ "_with_" ]
+                    },
+                    "required" : [ "data", "as" ],
+                    "properties" : {
+                      "as" : {
+                        "type" : "string"
+                      },
+                      "data" : {
+                        "type" : "string"
+                      }
+                    }
+                  }
+                }
+              },
+              "serviceSpecification" : {
+                "oneOf" : [ {
+                  "type" : "object",
+                  "additionalProperties" : false,
+                  "properties" : {
+                    "id" : {
+                      "type" : "string",
+                      "pattern" : "^([a-f0-9]{24})|([a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89aAbB][a-f0-9]{3}-[a-f0-9]{12})$"
+                    },
+                    "href" : {
+                      "type" : "string"
+                    },
+                    "_with_" : {
+                      "type" : "object",
+                      "additionalProperties" : false,
+                      "not" : {
+                        "required" : [ "_with_" ]
+                      },
+                      "required" : [ "data", "as" ],
+                      "properties" : {
+                        "as" : {
+                          "type" : "string"
+                        },
+                        "data" : {
+                          "type" : "string"
+                        }
+                      }
+                    }
+                  }
+                }, {
+                  "type" : "string",
+                  "enum" : [ "+", "_" ]
+                } ]
+              },
+              "childToParentRelationship" : {
+                "type" : "string",
+                "enum" : [ "supports", "relatesTo", "refersTo", "providedTo" ]
+              },
+              "name" : {
+                "type" : "string"
+              },
+              "state" : {
+                "type" : "string",
+                "enum" : [ "initial", "feasibilityChecked", "reserved", "active", "inactive", "suspended", "terminated", "cancelled", "+", "_" ]
+              },
+              "place" : {
+                "oneOf" : [ {
+                  "type" : "object",
+                  "additionalProperties" : false,
+                  "properties" : {
+                    "_with_" : {
+                      "type" : "object",
+                      "additionalProperties" : false,
+                      "not" : {
+                        "required" : [ "_with_" ]
+                      },
+                      "required" : [ "data", "as" ],
+                      "properties" : {
+                        "as" : {
+                          "type" : "string"
+                        },
+                        "data" : {
+                          "type" : "string"
+                        }
+                      }
+                    }
+                  },
+                  "patternProperties" : {
+                    "^[a-zA-Z0-9]*" : {
+                      "oneOf" : [ {
+                        "type" : "object",
+                        "additionalProperties" : false,
+                        "required" : [ "id" ],
+                        "properties" : {
+                          "role" : {
+                            "type" : "string"
+                          },
+                          "referredType" : {
+                            "type" : "string"
+                          },
+                          "name" : {
+                            "type" : "string"
+                          },
+                          "id" : {
+                            "type" : "string"
+                          },
+                          "type" : {
+                            "type" : "string"
+                          },
+                          "_with_" : {
+                            "type" : "object",
+                            "additionalProperties" : false,
+                            "not" : {
+                              "required" : [ "_with_" ]
+                            },
+                            "required" : [ "data", "as" ],
+                            "properties" : {
+                              "as" : {
+                                "type" : "string"
+                              },
+                              "data" : {
+                                "type" : "string"
+                              }
+                            }
+                          }
+                        }
+                      }, {
+                        "type" : "string",
+                        "enum" : [ "+", "_" ]
+                      } ]
+                    }
+                  }
+                }, {
+                  "type" : "string",
+                  "enum" : [ "+", "_" ]
+                } ]
+              },
+              "relatedParty" : {
+                "oneOf" : [ {
+                  "type" : "object",
+                  "additionalProperties" : false,
+                  "properties" : {
+                    "_with_" : {
+                      "type" : "object",
+                      "additionalProperties" : false,
+                      "not" : {
+                        "required" : [ "_with_" ]
+                      },
+                      "required" : [ "data", "as" ],
+                      "properties" : {
+                        "as" : {
+                          "type" : "string"
+                        },
+                        "data" : {
+                          "type" : "string"
+                        }
+                      }
+                    }
+                  },
+                  "patternProperties" : {
+                    "^[a-zA-Z0-9]*" : {
+                      "oneOf" : [ {
+                        "type" : "object",
+                        "additionalProperties" : false,
+                        "required" : [ "id" ],
+                        "properties" : {
+                          "role" : {
+                            "type" : "string"
+                          },
+                          "referredType" : {
+                            "type" : "string"
+                          },
+                          "name" : {
+                            "type" : "string"
+                          },
+                          "id" : {
+                            "type" : "string"
+                          },
+                          "href" : {
+                            "type" : "string"
+                          },
+                          "type" : {
+                            "type" : "string"
+                          },
+                          "_with_" : {
+                            "type" : "object",
+                            "additionalProperties" : false,
+                            "not" : {
+                              "required" : [ "_with_" ]
+                            },
+                            "required" : [ "data", "as" ],
+                            "properties" : {
+                              "as" : {
+                                "type" : "string"
+                              },
+                              "data" : {
+                                "type" : "string"
+                              }
+                            }
+                          }
+                        }
+                      }, {
+                        "type" : "string",
+                        "enum" : [ "+", "_" ]
+                      } ]
+                    }
+                  }
+                }, {
+                  "type" : "string",
+                  "enum" : [ "+", "_" ]
+                } ]
+              },
+              "_if_" : {
+                "oneOf" : [ {
+                  "type" : "string",
+                  "pattern" : "^~(.*)"
+                }, {
+                  "type" : "array",
+                  "items" : {
+                    "type" : "string",
+                    "pattern" : "^~(.*)"
+                  }
+                } ]
+              },
+              "_with_" : {
+                "type" : "object",
+                "additionalProperties" : false,
+                "not" : {
+                  "required" : [ "_with_" ]
+                },
+                "required" : [ "data", "as" ],
+                "properties" : {
+                  "as" : {
+                    "type" : "string"
+                  },
+                  "data" : {
+                    "type" : "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "configType" : {
+      "type" : "string",
+      "const" : "supportingServices"
+    },
+    "_with_" : {
+      "type" : "object",
+      "additionalProperties" : false,
+      "not" : {
+        "required" : [ "_with_" ]
+      },
+      "required" : [ "data", "as" ],
+      "properties" : {
+        "as" : {
+          "type" : "string"
+        },
+        "data" : {
+          "type" : "string"
+        }
+      }
+    }
+  }
+}

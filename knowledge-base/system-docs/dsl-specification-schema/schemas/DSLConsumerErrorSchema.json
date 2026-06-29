@@ -1,0 +1,644 @@
+{
+  "$id" : "http://orchaas-schema-service/v1",
+  "$schema" : "http://json-schema.org/draft-07/schema#",
+  "title" : "ORCHaaS YAML DSL Operation Specification",
+  "version" : "v1.0",
+  "additionalProperties" : false,
+  "required" : [ "configType", "errors" ],
+  "properties" : {
+    "configType" : {
+      "type" : "string",
+      "const" : "consumerErrors"
+    },
+    "errors" : {
+      "type" : "object",
+      "additionalProperties" : false,
+      "properties" : {
+        "operations" : {
+          "type" : "array",
+          "items" : {
+            "type" : "object",
+            "additionalProperties" : false,
+            "required" : [ "error", "_if_" ],
+            "properties" : {
+              "error" : {
+                "type" : "object",
+                "additionalProperties" : false,
+                "required" : [ "code" ],
+                "properties" : {
+                  "reason" : {
+                    "type" : "string"
+                  },
+                  "code" : {
+                    "type" : "string"
+                  },
+                  "source" : {
+                    "type" : "string"
+                  },
+                  "message" : {
+                    "type" : "string"
+                  },
+                  "category" : {
+                    "type" : "string"
+                  },
+                  "httpCode" : {
+                    "type" : "number"
+                  },
+                  "_with_" : {
+                    "type" : "object",
+                    "additionalProperties" : false,
+                    "not" : {
+                      "required" : [ "_with_" ]
+                    },
+                    "required" : [ "data", "as" ],
+                    "properties" : {
+                      "as" : {
+                        "type" : "string"
+                      },
+                      "data" : {
+                        "type" : "string"
+                      }
+                    }
+                  }
+                }
+              },
+              "_if_" : {
+                "type" : "array",
+                "items" : {
+                  "type" : "string",
+                  "pattern" : "^~(.*)"
+                }
+              },
+              "_with_" : {
+                "type" : "object",
+                "additionalProperties" : false,
+                "not" : {
+                  "required" : [ "_with_" ]
+                },
+                "required" : [ "data", "as" ],
+                "properties" : {
+                  "as" : {
+                    "type" : "string"
+                  },
+                  "data" : {
+                    "type" : "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "acknowledged" : {
+          "type" : "array",
+          "items" : {
+            "type" : "object",
+            "additionalProperties" : false,
+            "required" : [ "error", "_if_" ],
+            "properties" : {
+              "error" : {
+                "type" : "object",
+                "additionalProperties" : false,
+                "required" : [ "code" ],
+                "properties" : {
+                  "reason" : {
+                    "type" : "string"
+                  },
+                  "code" : {
+                    "type" : "string"
+                  },
+                  "source" : {
+                    "type" : "string"
+                  },
+                  "message" : {
+                    "type" : "string"
+                  },
+                  "category" : {
+                    "type" : "string"
+                  },
+                  "httpCode" : {
+                    "type" : "number"
+                  },
+                  "_with_" : {
+                    "type" : "object",
+                    "additionalProperties" : false,
+                    "not" : {
+                      "required" : [ "_with_" ]
+                    },
+                    "required" : [ "data", "as" ],
+                    "properties" : {
+                      "as" : {
+                        "type" : "string"
+                      },
+                      "data" : {
+                        "type" : "string"
+                      }
+                    }
+                  }
+                }
+              },
+              "_if_" : {
+                "type" : "array",
+                "items" : {
+                  "type" : "string",
+                  "pattern" : "^~(.*)"
+                }
+              },
+              "_with_" : {
+                "type" : "object",
+                "additionalProperties" : false,
+                "not" : {
+                  "required" : [ "_with_" ]
+                },
+                "required" : [ "data", "as" ],
+                "properties" : {
+                  "as" : {
+                    "type" : "string"
+                  },
+                  "data" : {
+                    "type" : "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "inProgress" : {
+          "type" : "array",
+          "items" : {
+            "type" : "object",
+            "additionalProperties" : false,
+            "required" : [ "error", "_if_" ],
+            "properties" : {
+              "error" : {
+                "type" : "object",
+                "additionalProperties" : false,
+                "required" : [ "code" ],
+                "properties" : {
+                  "reason" : {
+                    "type" : "string"
+                  },
+                  "code" : {
+                    "type" : "string"
+                  },
+                  "source" : {
+                    "type" : "string"
+                  },
+                  "message" : {
+                    "type" : "string"
+                  },
+                  "category" : {
+                    "type" : "string"
+                  },
+                  "httpCode" : {
+                    "type" : "number"
+                  },
+                  "_with_" : {
+                    "type" : "object",
+                    "additionalProperties" : false,
+                    "not" : {
+                      "required" : [ "_with_" ]
+                    },
+                    "required" : [ "data", "as" ],
+                    "properties" : {
+                      "as" : {
+                        "type" : "string"
+                      },
+                      "data" : {
+                        "type" : "string"
+                      }
+                    }
+                  }
+                }
+              },
+              "_if_" : {
+                "type" : "array",
+                "items" : {
+                  "type" : "string",
+                  "pattern" : "^~(.*)"
+                }
+              },
+              "_with_" : {
+                "type" : "object",
+                "additionalProperties" : false,
+                "not" : {
+                  "required" : [ "_with_" ]
+                },
+                "required" : [ "data", "as" ],
+                "properties" : {
+                  "as" : {
+                    "type" : "string"
+                  },
+                  "data" : {
+                    "type" : "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "rejected" : {
+          "type" : "array",
+          "items" : {
+            "type" : "object",
+            "additionalProperties" : false,
+            "required" : [ "error", "_if_" ],
+            "properties" : {
+              "error" : {
+                "type" : "object",
+                "additionalProperties" : false,
+                "required" : [ "code" ],
+                "properties" : {
+                  "reason" : {
+                    "type" : "string"
+                  },
+                  "code" : {
+                    "type" : "string"
+                  },
+                  "source" : {
+                    "type" : "string"
+                  },
+                  "message" : {
+                    "type" : "string"
+                  },
+                  "category" : {
+                    "type" : "string"
+                  },
+                  "httpCode" : {
+                    "type" : "number"
+                  },
+                  "_with_" : {
+                    "type" : "object",
+                    "additionalProperties" : false,
+                    "not" : {
+                      "required" : [ "_with_" ]
+                    },
+                    "required" : [ "data", "as" ],
+                    "properties" : {
+                      "as" : {
+                        "type" : "string"
+                      },
+                      "data" : {
+                        "type" : "string"
+                      }
+                    }
+                  }
+                }
+              },
+              "_if_" : {
+                "type" : "array",
+                "items" : {
+                  "type" : "string",
+                  "pattern" : "^~(.*)"
+                }
+              },
+              "_with_" : {
+                "type" : "object",
+                "additionalProperties" : false,
+                "not" : {
+                  "required" : [ "_with_" ]
+                },
+                "required" : [ "data", "as" ],
+                "properties" : {
+                  "as" : {
+                    "type" : "string"
+                  },
+                  "data" : {
+                    "type" : "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "prefetch" : {
+          "type" : "array",
+          "items" : {
+            "type" : "object",
+            "additionalProperties" : false,
+            "required" : [ "error", "_if_" ],
+            "properties" : {
+              "error" : {
+                "type" : "object",
+                "additionalProperties" : false,
+                "required" : [ "code" ],
+                "properties" : {
+                  "reason" : {
+                    "type" : "string"
+                  },
+                  "code" : {
+                    "type" : "string"
+                  },
+                  "source" : {
+                    "type" : "string"
+                  },
+                  "message" : {
+                    "type" : "string"
+                  },
+                  "category" : {
+                    "type" : "string"
+                  },
+                  "httpCode" : {
+                    "type" : "number"
+                  },
+                  "_with_" : {
+                    "type" : "object",
+                    "additionalProperties" : false,
+                    "not" : {
+                      "required" : [ "_with_" ]
+                    },
+                    "required" : [ "data", "as" ],
+                    "properties" : {
+                      "as" : {
+                        "type" : "string"
+                      },
+                      "data" : {
+                        "type" : "string"
+                      }
+                    }
+                  }
+                }
+              },
+              "_if_" : {
+                "type" : "array",
+                "items" : {
+                  "type" : "string",
+                  "pattern" : "^~(.*)"
+                }
+              },
+              "_with_" : {
+                "type" : "object",
+                "additionalProperties" : false,
+                "not" : {
+                  "required" : [ "_with_" ]
+                },
+                "required" : [ "data", "as" ],
+                "properties" : {
+                  "as" : {
+                    "type" : "string"
+                  },
+                  "data" : {
+                    "type" : "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "cancelled" : {
+          "type" : "array",
+          "items" : {
+            "type" : "object",
+            "additionalProperties" : false,
+            "required" : [ "error", "_if_" ],
+            "properties" : {
+              "error" : {
+                "type" : "object",
+                "additionalProperties" : false,
+                "required" : [ "code" ],
+                "properties" : {
+                  "reason" : {
+                    "type" : "string"
+                  },
+                  "code" : {
+                    "type" : "string"
+                  },
+                  "source" : {
+                    "type" : "string"
+                  },
+                  "message" : {
+                    "type" : "string"
+                  },
+                  "category" : {
+                    "type" : "string"
+                  },
+                  "httpCode" : {
+                    "type" : "number"
+                  },
+                  "_with_" : {
+                    "type" : "object",
+                    "additionalProperties" : false,
+                    "not" : {
+                      "required" : [ "_with_" ]
+                    },
+                    "required" : [ "data", "as" ],
+                    "properties" : {
+                      "as" : {
+                        "type" : "string"
+                      },
+                      "data" : {
+                        "type" : "string"
+                      }
+                    }
+                  }
+                }
+              },
+              "_if_" : {
+                "type" : "array",
+                "items" : {
+                  "type" : "string",
+                  "pattern" : "^~(.*)"
+                }
+              },
+              "_with_" : {
+                "type" : "object",
+                "additionalProperties" : false,
+                "not" : {
+                  "required" : [ "_with_" ]
+                },
+                "required" : [ "data", "as" ],
+                "properties" : {
+                  "as" : {
+                    "type" : "string"
+                  },
+                  "data" : {
+                    "type" : "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "completed" : {
+          "type" : "array",
+          "items" : {
+            "type" : "object",
+            "additionalProperties" : false,
+            "required" : [ "error", "_if_" ],
+            "properties" : {
+              "error" : {
+                "type" : "object",
+                "additionalProperties" : false,
+                "required" : [ "code" ],
+                "properties" : {
+                  "reason" : {
+                    "type" : "string"
+                  },
+                  "code" : {
+                    "type" : "string"
+                  },
+                  "source" : {
+                    "type" : "string"
+                  },
+                  "message" : {
+                    "type" : "string"
+                  },
+                  "category" : {
+                    "type" : "string"
+                  },
+                  "httpCode" : {
+                    "type" : "number"
+                  },
+                  "_with_" : {
+                    "type" : "object",
+                    "additionalProperties" : false,
+                    "not" : {
+                      "required" : [ "_with_" ]
+                    },
+                    "required" : [ "data", "as" ],
+                    "properties" : {
+                      "as" : {
+                        "type" : "string"
+                      },
+                      "data" : {
+                        "type" : "string"
+                      }
+                    }
+                  }
+                }
+              },
+              "_if_" : {
+                "type" : "array",
+                "items" : {
+                  "type" : "string",
+                  "pattern" : "^~(.*)"
+                }
+              },
+              "_with_" : {
+                "type" : "object",
+                "additionalProperties" : false,
+                "not" : {
+                  "required" : [ "_with_" ]
+                },
+                "required" : [ "data", "as" ],
+                "properties" : {
+                  "as" : {
+                    "type" : "string"
+                  },
+                  "data" : {
+                    "type" : "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "failed" : {
+          "type" : "array",
+          "items" : {
+            "type" : "object",
+            "additionalProperties" : false,
+            "required" : [ "error", "_if_" ],
+            "properties" : {
+              "error" : {
+                "type" : "object",
+                "additionalProperties" : false,
+                "required" : [ "code" ],
+                "properties" : {
+                  "reason" : {
+                    "type" : "string"
+                  },
+                  "code" : {
+                    "type" : "string"
+                  },
+                  "source" : {
+                    "type" : "string"
+                  },
+                  "message" : {
+                    "type" : "string"
+                  },
+                  "category" : {
+                    "type" : "string"
+                  },
+                  "httpCode" : {
+                    "type" : "number"
+                  },
+                  "_with_" : {
+                    "type" : "object",
+                    "additionalProperties" : false,
+                    "not" : {
+                      "required" : [ "_with_" ]
+                    },
+                    "required" : [ "data", "as" ],
+                    "properties" : {
+                      "as" : {
+                        "type" : "string"
+                      },
+                      "data" : {
+                        "type" : "string"
+                      }
+                    }
+                  }
+                }
+              },
+              "_if_" : {
+                "type" : "array",
+                "items" : {
+                  "type" : "string",
+                  "pattern" : "^~(.*)"
+                }
+              },
+              "_with_" : {
+                "type" : "object",
+                "additionalProperties" : false,
+                "not" : {
+                  "required" : [ "_with_" ]
+                },
+                "required" : [ "data", "as" ],
+                "properties" : {
+                  "as" : {
+                    "type" : "string"
+                  },
+                  "data" : {
+                    "type" : "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "_with_" : {
+          "type" : "object",
+          "additionalProperties" : false,
+          "not" : {
+            "required" : [ "_with_" ]
+          },
+          "required" : [ "data", "as" ],
+          "properties" : {
+            "as" : {
+              "type" : "string"
+            },
+            "data" : {
+              "type" : "string"
+            }
+          }
+        }
+      }
+    },
+    "_with_" : {
+      "type" : "object",
+      "additionalProperties" : false,
+      "not" : {
+        "required" : [ "_with_" ]
+      },
+      "required" : [ "data", "as" ],
+      "properties" : {
+        "as" : {
+          "type" : "string"
+        },
+        "data" : {
+          "type" : "string"
+        }
+      }
+    }
+  }
+}

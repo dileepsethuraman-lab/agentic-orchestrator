@@ -1,0 +1,80 @@
+# ORCHaaS DSL — L3VPN Service Definition
+# Schema: DSLServiceDefinitionSchema (configType: serviceDefinition)
+configType: serviceDefinition
+version: v1.0
+systemCode: L3VPN-ENT
+tmfProperties:
+  name: MPLS L3VPN Service
+  description: Layer 3 VPN service over MPLS backbone for enterprise customers
+  specification: "b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e"
+  tmfApi: TMF640
+  tmfApiVersion: v4.1.0
+  serviceRelationship:
+    - vrf-allocation:
+        alias: VRF Instance
+        serviceSpecification:
+          id: "c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8"
+          href: /serviceCatalog/serviceSpecification/vrf-allocation
+        tmfApi: TMF640
+        tmfApiVersion: v4.1.0
+    - bgp-peering:
+        alias: BGP Route Distribution
+        serviceSpecification:
+          id: "d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9"
+          href: /serviceCatalog/serviceSpecification/bgp-peering
+        tmfApi: TMF640
+        tmfApiVersion: v4.1.0
+
+lifecycle:
+  acknowledged:
+    supportingServices:
+      - pe-configuration:
+          parentToChildRelationship: supports
+          supportingServices:
+            - serviceCharacteristics:
+                vrf_name: "~request.characteristic[vrf_name].value"
+                rd: "~request.characteristic[rd].value"
+                rt_import: "~request.characteristic[rt_import].value"
+                rt_export: "~request.characteristic[rt_export].value"
+                bgp_peer: "~request.characteristic[bgp_peer].value"
+      - route-reflection:
+          parentToChildRelationship: supports
+          supportingServices:
+            - serviceCharacteristics:
+                cluster_id: "~request.characteristic[cluster_id].value"
+                peer_group: "~request.characteristic[peer_group].value"
+                asn: "~request.characteristic[asn].value"
+      - vrf-allocation:
+          parentToChildRelationship: creates
+          supportingServices:
+            - serviceCharacteristics:
+                vrf_name: "~request.characteristic[vrf_name].value"
+                rd: "~request.characteristic[rd].value"
+                route_targets: "~request.characteristic[route_targets].value"
+                interfaces: "~request.characteristic[interfaces].value"
+      - monitoring-setup:
+          parentToChildRelationship: supports
+          supportingServices:
+            - serviceCharacteristics:
+                snmp_community: "~request.characteristic[snmp_community].value"
+                syslog_server: "~request.characteristic[syslog_server].value"
+                netflow_collector: "~request.characteristic[netflow_collector].value"
+
+variables:
+  pe_ip: 10.1.1.1
+  asn: "65001"
+
+shortcuts:
+  platinum_bandwidth: "10000"
+  gold_bandwidth: "1000"
+  silver_bandwidth: "100"
+
+outstanding:
+  feature: "+"
+  operatingState: "+"
+  serviceCharacteristics: "+"
+  state: "+"
+  networkElements: "+"
+  place: "_"
+  relatedParty: "+"
+  type: "+"
